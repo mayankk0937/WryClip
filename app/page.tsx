@@ -35,7 +35,7 @@ const Navbar = ({
 
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
+              className="ml-2 flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
               aria-label="Toggle navigation menu"
             >
               <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "rotate(45deg) translateY(0.25rem)" : "none" }} />
@@ -59,10 +59,7 @@ const Navbar = ({
                 <button
                   key={i}
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent overlay click when clicking menu items
-                    scrollToSection(id);
-                  }}
+                  onClick={() => scrollToSection(id)}
                   className={`text-left transition ${
                     id === "register"
                       ? "rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-white md:bg-transparent md:px-0 md:py-0 md:text-white"
@@ -86,10 +83,7 @@ const Navbar = ({
 
             <div
               className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent overlay click when clicking toggle
-                toggleDarkMode();
-              }}
+              onClick={toggleDarkMode}
             >
               <div
                 className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
@@ -99,15 +93,6 @@ const Navbar = ({
             </div>
           </div>
         </div>
-
-        {menuOpen && (
-          <button
-            type="button"
-            onClick={() => setMenuOpen(false)}
-            className="fixed inset-0 z-40 md:hidden bg-transparent"
-            aria-label="Close navigation menu"
-          />
-        )}
       </div>
     </div>
   );
