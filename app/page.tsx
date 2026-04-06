@@ -52,7 +52,7 @@ const Navbar = ({
           </button>
         </div>
 
-        <div className={`overflow-hidden transition-[max-height] duration-300 md:overflow-visible md:max-h-full ${menuOpen ? "max-h-96" : "max-h-0"} w-full`}>
+        <div className={`overflow-hidden transition-[max-height] duration-300 md:overflow-visible md:max-h-full ${menuOpen ? "max-h-96" : "max-h-0"} w-full z-50 relative`}>
           <div className="flex flex-col gap-3 px-4 pb-4 text-gray-300 md:flex-row md:px-0 md:pb-0 md:items-center md:gap-6">
             {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
               (id, i) => (
@@ -93,6 +93,15 @@ const Navbar = ({
             </div>
           </div>
         </div>
+
+        {menuOpen && (
+          <button
+            type="button"
+            onClick={() => setMenuOpen(false)}
+            className="fixed inset-0 z-40 md:hidden bg-transparent"
+            aria-label="Close navigation menu"
+          />
+        )}
       </div>
     </div>
   );
@@ -150,7 +159,7 @@ export default function Home() {
       <CustomCursor />
 
       {/* Background Glow */}
-      <div className="absolute inset-0 -z-20 overflow-hidden">
+      <div className="absolute left-1/2 top-0 z-[-20] w-full max-w-7xl -translate-x-1/2 overflow-hidden">
         <div className="absolute top-[-80px] left-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] bg-pink-500 opacity-40 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[300px] h-[300px] bg-blue-500 opacity-30 rounded-full blur-3xl animate-pulse"></div>
