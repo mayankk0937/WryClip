@@ -27,20 +27,22 @@ const Navbar = ({
   return (
     <div className="fixed top-0 left-0 w-full bg-black/30 backdrop-blur-md border-b border-white/10 z-50">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex w-full flex-col items-center justify-center gap-1 md:flex-row md:items-center md:justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-            WryClip
-          </h1>
+        <div className="flex w-full items-center justify-between gap-2 md:gap-0">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+              WryClip
+            </h1>
 
-          <button
-            onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
-            aria-label="Toggle navigation menu"
-          >
-            <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "rotate(45deg) translateY(0.25rem)" : "none" }} />
-            <span className={`block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300 ${menuOpen ? "opacity-0" : "my-1"}`} />
-            <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "-rotate(45deg) translateY(-0.25rem)" : "none" }} />
-          </button>
+            <button
+              onClick={() => setMenuOpen((prev) => !prev)}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
+              aria-label="Toggle navigation menu"
+            >
+              <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "rotate(45deg) translateY(0.25rem)" : "none" }} />
+              <span className={`block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300 ${menuOpen ? "opacity-0" : "my-1"}`} />
+              <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "-rotate(45deg) translateY(-0.25rem)" : "none" }} />
+            </button>
+          </div>
 
           <button
             onClick={() => scrollToSection("register")}
