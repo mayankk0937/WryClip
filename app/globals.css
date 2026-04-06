@@ -95,16 +95,3 @@ a:hover, span:hover {
   color: #ffffff;
   cursor: pointer;
 }
-
-/* MOBILE RESPONSIVE */
-@media (max-width: 768px) {
-  .md\\:grid-cols-3 {
-    grid-template-columns: 1fr !important;
-  }
-  .md\\:flex {
-    display: flex !important;
-  }
-  .md\\:hidden {
-    display: none !important;
-  }
-}
