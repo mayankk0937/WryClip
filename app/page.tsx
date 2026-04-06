@@ -157,8 +157,8 @@ export default function Home() {
       {/* Background Glow */}
       <div className="absolute left-1/2 top-0 z-[-20] w-full -translate-x-1/2 overflow-hidden">
         <div className="absolute top-[-80px] left-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] bg-pink-500 opacity-40 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[300px] h-[300px] bg-blue-500 opacity-30 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[300px] h-[300px] bg-purple-600 opacity-30 rounded-full blur-3xl animate-pulse"></div>
       </div>
 
       {/* Navbar */}
