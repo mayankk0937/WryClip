@@ -3,7 +3,7 @@ import { useState } from "react";
 import CustomCursor from "./components/CustomCursor";
 import { motion } from "framer-motion";
 
-// Navbar
+// Navbar (same)
 const Navbar = ({
   darkMode,
   toggleDarkMode,
@@ -23,52 +23,63 @@ const Navbar = ({
   };
 
   return (
-    <div className="fixed top-0 left-0 w-full flex justify-between items-center px-6 py-4 backdrop-blur-md bg-black/30 border-b border-white/10 z-50">
-      <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-        WryClip
-      </h1>
-      <div className="hidden md:flex gap-6 text-gray-300 items-center">
-        {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
-          (id, i) => (
-            <span
-              key={i}
-              onClick={() => scrollToSection(id)}
-              className="cursor-pointer hover:text-white hover:underline transition"
-            >
-              {id === "hero"
-                ? "Home"
-                : id === "sections"
-                ? "Explore"
-                : id === "testimonials"
-                ? "Testimonials"
-                : id === "register"
-                ? "Register"
-                : id === "faq"
-                ? "FAQ"
-                : "Contact"}
-            </span>
-          )
-        )}
+    <div className="fixed top-0 left-0 w-full bg-black/30 backdrop-blur-md border-b border-white/10 z-50">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex w-full items-center justify-between">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            WryClip
+          </h1>
 
-        {/* Slide Toggle */}
-        <div
-          className="ml-4 relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
-          onClick={toggleDarkMode}
-        >
-          <div
-            className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
-              darkMode ? "translate-x-0" : "translate-x-8"
-            }`}
-          ></div>
+          <button
+            onClick={() => scrollToSection("register")}
+            className="hidden md:inline-flex px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition"
+          >
+            Register
+          </button>
         </div>
-      </div>
 
-      <button
-        onClick={() => scrollToSection("register")}
-        className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition"
-      >
-        Register
-      </button>
+        <div className="flex w-full flex-col gap-3 text-gray-300 md:flex-row md:items-center md:gap-6">
+          {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
+            (id, i) => (
+              <span
+                key={i}
+                onClick={() => scrollToSection(id)}
+                className="cursor-pointer hover:text-white hover:underline transition"
+              >
+                {id === "hero"
+                  ? "Home"
+                  : id === "sections"
+                  ? "Explore"
+                  : id === "testimonials"
+                  ? "Testimonials"
+                  : id === "register"
+                  ? "Register"
+                  : id === "faq"
+                  ? "FAQ"
+                  : "Contact"}
+              </span>
+            )
+          )}
+
+          <div
+            className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
+            onClick={toggleDarkMode}
+          >
+            <div
+              className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
+                darkMode ? "translate-x-0" : "translate-x-8"
+              }`}
+            ></div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => scrollToSection("register")}
+          className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-center md:hidden hover:scale-105 transition"
+        >
+          Register
+        </button>
+      </div>
     </div>
   );
 };
@@ -76,7 +87,15 @@ const Navbar = ({
 export default function Home() {
   const navbarHeight = 64;
   const extraOffset = 20;
+
   const [darkMode, setDarkMode] = useState(true);
+
+  // ✅ FORM STATE (ADD KIYA)
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
@@ -88,13 +107,32 @@ export default function Home() {
     }
   };
 
+  // ✅ FORM FUNCTIONS (ADD KIYA)
+  const handleChange = (e: any) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    await fetch(
+      "https://script.google.com/macros/s/AKfycbxhc8IRN8Kc8SGzFOnfmDJ850NhL8EcHwkd7WJeP1EJiWSs54o2hXX3Rp8pbV0gRpsw1Q/exec",
+      {
+        method: "POST",
+        body: JSON.stringify(formData),
+      }
+    );
+
+    alert("Form Submitted ✅");
+    setFormData({ name: "", email: "", phone: "" });
+  };
+
   return (
     <div
       className={`${
         darkMode ? "bg-black/80 text-white" : "bg-white text-black"
       } relative min-h-screen overflow-x-hidden overflow-y-auto transition-colors duration-500`}
     >
-      {/* Cursor */}
       <CustomCursor />
 
       {/* Background Glow */}
@@ -129,47 +167,31 @@ export default function Home() {
         >
           Join WryClip
         </button>
+
       </section>
 
       {/* Sections */}
-<section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
-  {[
-    {
-      title: "For Writers",
-      desc: "Discover a powerful community of writers and unlock earning opportunities through your stories"
-    },
-    {
-      title: "For Creators",
-      desc: "Bring your imagination to life and profit from your content."
-    },
-    {
-      title: "Talent Discovery",
-      desc: "Experience stories with a cinematic edge."
-    }
-  ].map((item, i) => (
-    <motion.div
-      key={i}
-      whileHover={{ scale: 1.05 }}
-      className={`p-6 rounded-2xl border border-white/10 cursor-pointer backdrop-blur-lg ${
-        darkMode ? "bg-white/5" : "bg-black/5"
-      }`}
-    >
-      <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-      <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-        {item.desc}
-      </p>
-    </motion.div>
-  ))}
-</section>
+      <section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
+        {[
+          { title: "For Writers", desc: "Discover a powerful community of writers and unlock earning opportunities through your stories" },
+          { title: "For Creators", desc: "Bring your imagination to life and profit from your content." },
+          { title: "Talent Discovery", desc: "Experience stories with a cinematic edge." }
+        ].map((item, i) => (
+          <motion.div key={i} whileHover={{ scale: 1.05 }} className="p-6 rounded-2xl border border-white/10 backdrop-blur-lg bg-white/5">
+            <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+            <p className="text-gray-400">{item.desc}</p>
+          </motion.div>
+        ))}
+      </section>
 
       {/* Testimonials */}
       <section id="testimonials" className="mt-32 max-w-5xl mx-auto px-4 text-center">
         <h2 className={`text-3xl font-bold mb-10 ${darkMode ? "text-white" : "text-black"}`}>What People Are Saying</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { name: "Alice", feedback: "WryClip transformed my content workflow!" },
-            { name: "Bob", feedback: "Best platform for creators. Highly recommended!" },
-            { name: "Charlie", feedback: "Intuitive, fast, and professional." },
+            { name:"~Mansi(@mansi(@mansi.hihihi_)", feedback:"Social media feels so filtered lately, so this concept is a breath of fresh air! We really needed a platform like this. Can’t wait for the launch! something big is brewing! The idea is super fresh and honestly, game-changing. Can't wait for the launch, counting down the days!" },
+            { name: "Aakanksha Bhat(Author Of - how to read when you hate reading)", feedback: "An app that thoughtfully bridges the gap between story writer and story teller. Can't wait for the launch! honestly that's a great initiative. What’s particularly compelling is the underlying philosophy valuing originality as an asset rather than a byproduct. Looking forward to seeing this platform come to life." },
+            { name: "~Dhruv, page- why_should.i_care", feedback: "Bringing writers, creators, and the audience together in one place, that’s where the real magic happens. If the execution is strong, this could seriously change how we consume stories.Honestlythis feels like something new and meaningful. Definitely excited to see how this turns out. Waiting for the launch! 🚀✨ " },
           ].map((t, i) => (
             <motion.div
               key={i}
@@ -187,44 +209,23 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Registration */}
-      <section
-        id="register"
-        className="mt-32 max-w-2xl mx-auto px-4 text-center"
-      >
-        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? "text-white" : "text-black"}`}>
-          Register Now
-        </h2>
+      {/* ✅ REGISTER (ONLY UPDATED PART) */}
+      <section id="register" className="mt-32 max-w-2xl mx-auto px-4 text-center">
+        <h2 className="text-3xl font-bold mb-6">Register Now</h2>
 
-        {/* Boxed Form */}
-        <div className="bg-black/70 dark:bg-white/10 p-8 rounded-2xl border border-white/20 backdrop-blur-lg flex flex-col gap-4 shadow-lg">
-          <input
-            type="text"
-            placeholder="Full Name"
-            className={`p-3 rounded-lg border outline-none focus:border-purple-500 ${
-              darkMode ? "bg-black/90 border-gray-600 text-white" : "bg-white border-gray-300 text-black"
-            }`}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className={`p-3 rounded-lg border outline-none focus:border-purple-500 ${
-              darkMode ? "bg-black/90 border-gray-600 text-white" : "bg-white border-gray-300 text-black"
-            }`}
-          />
-          <input
-            type="tel"
-            placeholder="Phone Number"
-            className={`p-3 rounded-lg border outline-none focus:border-purple-500 ${
-              darkMode ? "bg-black/90 border-gray-600 text-white" : "bg-white border-gray-300 text-black"
-            }`}
-          />
-          <button className="py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition font-semibold">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-black/70 p-8 rounded-2xl border border-white/20 backdrop-blur-lg flex flex-col gap-4 shadow-lg"
+        >
+          <input name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" className="p-3 rounded-lg text-white"/>
+          <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" className="p-3 rounded-lg text-white"/>
+          <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" className="p-3 rounded-lg text-white"/>
+
+          <button type="submit" className="py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500">
             Submit
           </button>
-        </div>
+        </form>
       </section>
-
       {/* FAQ */}
       <section id="faq" className="mt-32 max-w-4xl mx-auto px-4">
         <h2 className={`text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-black"}`}>
@@ -247,7 +248,7 @@ export default function Home() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="relative mt-32 max-w-4xl mx-auto px-4 py-10">
+      <section id="contact" className="relative mt-20 max-w-4xl mx-auto px-4 py-10">
         {/* Glow */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-purple-600 opacity-30 rounded-full blur-3xl animate-pulse"></div>
@@ -282,7 +283,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className={`mt-32 py-10 px-4 ${darkMode ? "bg-black/80 text-gray-300" : "bg-white text-gray-700"}`}>
+      <footer className={`mt-16 py-10 px-4 ${darkMode ? "bg-purple-800/80 text-gray-300" : "bg-white text-gray-700"}`}>
         <p className="text-center mt-6">© 2026 WryClip. All rights reserved.</p>
       </footer>
     </div>
