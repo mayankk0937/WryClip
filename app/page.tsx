@@ -35,17 +35,17 @@ const Navbar = ({
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full flex justify-between items-center px-6 py-4 backdrop-blur-md bg-black/30 border-b border-white/10 z-50">
+      <div className={`fixed top-0 left-0 w-full flex justify-between items-center px-6 py-4 backdrop-blur-md border-b z-50 transition-colors duration-500 ${darkMode ? "bg-black/30 border-white/10" : "bg-white/80 border-black/10 shadow-lg"}`}>
         <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
           WryClip
         </h1>
 
-        <div className="hidden md:flex gap-6 text-gray-300 items-center">
+        <div className={`hidden md:flex gap-6 items-center ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
           {navLinks.map(({ id, label }, i) => (
             <span
               key={i}
               onClick={() => scrollToSection(id)}
-              className="cursor-pointer hover:text-white hover:underline transition"
+              className={`cursor-pointer hover:underline transition ${darkMode ? "hover:text-white" : "hover:text-black"}`}
             >
               {label}
             </span>
@@ -84,7 +84,7 @@ const Navbar = ({
                 }`}
             ></div>
           </div>
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-white focus:outline-none">
+          <button onClick={() => setMenuOpen(!menuOpen)} className={`focus:outline-none ${darkMode ? "text-white" : "text-black"}`}>
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -101,14 +101,14 @@ const Navbar = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed top-[73px] left-0 w-full bg-gradient-to-b from-[#0a051a]/95 to-[#1c082b]/95 backdrop-blur-2xl rounded-b-3xl border-b border-white/10 z-40 flex flex-col items-center py-8 px-6 gap-4 md:hidden text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+          className={`fixed top-[73px] left-0 w-full backdrop-blur-2xl rounded-b-3xl border-b z-40 flex flex-col items-center py-8 px-6 gap-4 md:hidden transition-colors duration-500 ${darkMode ? "bg-gradient-to-b from-[#0a051a]/95 to-[#1c082b]/95 border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]" : "bg-gradient-to-b from-white/95 to-gray-50/95 border-black/10 text-black shadow-[0_20px_50px_rgba(0,0,0,0.1)]"}`}
         >
           <div className="w-full flex flex-col gap-3">
             {navLinks.map(({ id, label }, i) => (
               <span
                 key={i}
                 onClick={() => scrollToSection(id)}
-                className="cursor-pointer text-lg font-medium tracking-wide bg-white/5 border border-white/10 py-3 rounded-xl hover:bg-white/10 hover:border-purple-500/50 hover:text-purple-300 transition text-center w-full shadow-sm"
+                className={`cursor-pointer text-lg font-medium tracking-wide py-3 rounded-xl transition text-center w-full shadow-sm ${darkMode ? "bg-white/5 border border-white/10 hover:bg-white/10 hover:border-purple-500/50 hover:text-purple-300" : "bg-black/5 border border-black/10 hover:bg-black/10 hover:border-purple-500/50 hover:text-purple-600"}`}
               >
                 {label}
               </span>
@@ -116,7 +116,7 @@ const Navbar = ({
           </div>
           <button
             onClick={() => scrollToSection("register")}
-            className="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+            className="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)] text-white"
           >
             Register Now
           </button>
