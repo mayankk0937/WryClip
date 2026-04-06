@@ -27,7 +27,7 @@ const Navbar = ({
   return (
     <div className="fixed top-0 left-0 w-full bg-black/30 backdrop-blur-md border-b border-white/10 z-50">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full flex-col items-center justify-center gap-3 md:flex-row md:items-center md:justify-between">
           <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
             WryClip
           </h1>
