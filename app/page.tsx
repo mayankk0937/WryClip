@@ -26,7 +26,7 @@ const Navbar = ({
 
   return (
     <div className="fixed top-0 left-0 w-full bg-black/30 backdrop-blur-md border-b border-white/10 z-50">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
+      <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
         <div className="flex w-full items-center justify-between gap-2 md:gap-0">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
@@ -200,7 +200,7 @@ export default function Home() {
       </section>
 
       {/* Sections */}
-      <section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
+      <section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
         {[
           { title: "For Writers", desc: "Discover a powerful community of writers and unlock earning opportunities through your stories" },
           { title: "For Creators", desc: "Bring your imagination to life and profit from your content." },
@@ -214,7 +214,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="mt-32 max-w-5xl mx-auto px-4 text-center">
+      <section id="testimonials" className="mt-32 max-w-6xl mx-auto px-4 text-center">
         <h2 className={`text-3xl font-bold mb-10 ${darkMode ? "text-white" : "text-black"}`}>What People Are Saying</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {[
@@ -239,7 +239,7 @@ export default function Home() {
       </section>
 
       {/* ✅ REGISTER (ONLY UPDATED PART) */}
-      <section id="register" className="mt-32 max-w-2xl mx-auto px-4 text-center">
+      <section id="register" className="mt-32 max-w-3xl mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold mb-6">Register Now</h2>
 
         <form
@@ -256,7 +256,7 @@ export default function Home() {
         </form>
       </section>
       {/* FAQ */}
-      <section id="faq" className="mt-32 max-w-4xl mx-auto px-4">
+      <section id="faq" className="mt-32 max-w-5xl mx-auto px-4">
         <h2 className={`text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-black"}`}>
           Frequently Asked Questions
         </h2>
@@ -277,7 +277,7 @@ export default function Home() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="relative mt-20 max-w-4xl mx-auto px-4 py-10">
+      <section id="contact" className="relative mt-20 max-w-5xl mx-auto px-4 py-10">
         {/* Glow */}
         <div className="absolute inset-0 -z-10">
           <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-purple-600 opacity-30 rounded-full blur-3xl animate-pulse"></div>
