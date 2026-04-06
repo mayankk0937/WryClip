@@ -149,7 +149,7 @@ export default function Home() {
   return (
     <div
       className={`${
-        darkMode ? "bg-black/80 text-white" : "bg-white text-black"
+        darkMode ? "bg-gradient-to-br from-purple-900/90 via-black/80 to-blue-900/90" : "bg-gradient-to-br from-purple-100 via-white to-blue-100"
       } relative min-h-screen overflow-x-hidden overflow-y-auto transition-colors duration-500`}
     >
       <CustomCursor />
