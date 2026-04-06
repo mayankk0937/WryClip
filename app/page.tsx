@@ -11,6 +11,7 @@ const Navbar = ({
   darkMode: boolean;
   toggleDarkMode: () => void;
 }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
   const navbarHeight = 64;
   const extraOffset = 20;
 
@@ -19,6 +20,7 @@ const Navbar = ({
     if (el) {
       const elementPosition = el.offsetTop - navbarHeight - extraOffset;
       window.scrollTo({ top: elementPosition, behavior: "smooth" });
+      setMenuOpen(false);
     }
   };
 
@@ -31,6 +33,16 @@ const Navbar = ({
           </h1>
 
           <button
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
+            aria-label="Toggle navigation menu"
+          >
+            <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "rotate(45deg) translateY(0.25rem)" : "none" }} />
+            <span className={`block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300 ${menuOpen ? "opacity-0" : "my-1"}`} />
+            <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "-rotate(45deg) translateY(-0.25rem)" : "none" }} />
+          </button>
+
+          <button
             onClick={() => scrollToSection("register")}
             className="hidden md:inline-flex px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition"
           >
@@ -38,7 +50,7 @@ const Navbar = ({
           </button>
         </div>
 
-        <div className="flex w-full flex-col gap-3 text-gray-300 md:flex-row md:items-center md:gap-6">
+        <div className={`${menuOpen ? "flex" : "hidden"} w-full flex-col gap-3 text-gray-300 md:flex md:flex-row md:items-center md:gap-6`}>
           {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
             (id, i) => (
               <span
