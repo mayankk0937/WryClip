@@ -13,7 +13,7 @@ const Navbar = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navbarHeight = 64;
-  const extraOffset = 10;
+  const extraOffset = 5;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -105,7 +105,7 @@ const Navbar = ({
 
 export default function Home() {
   const navbarHeight = 64;
-  const extraOffset = 10;
+  const extraOffset = 5;
 
   const [darkMode, setDarkMode] = useState(true);
 
