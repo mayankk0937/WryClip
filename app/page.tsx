@@ -50,47 +50,47 @@ const Navbar = ({
           </button>
         </div>
 
-        <div className={`${menuOpen ? "flex" : "hidden"} w-full flex-col gap-3 text-gray-300 md:flex md:flex-row md:items-center md:gap-6`}>
-          {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
-            (id, i) => (
-              <span
-                key={i}
-                onClick={() => scrollToSection(id)}
-                className="cursor-pointer hover:text-white hover:underline transition"
-              >
-                {id === "hero"
-                  ? "Home"
-                  : id === "sections"
-                  ? "Explore"
-                  : id === "testimonials"
-                  ? "Testimonials"
-                  : id === "register"
-                  ? "Register"
-                  : id === "faq"
-                  ? "FAQ"
-                  : "Contact"}
-              </span>
-            )
-          )}
+        <div className={`overflow-hidden transition-[max-height] duration-300 md:overflow-visible md:max-h-full ${menuOpen ? "max-h-96" : "max-h-0"} w-full`}>
+          <div className="flex flex-col gap-3 px-4 pb-4 text-gray-300 md:flex-row md:px-0 md:pb-0 md:items-center md:gap-6">
+            {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
+              (id, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToSection(id)}
+                  className={`text-left transition ${
+                    id === "register"
+                      ? "rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-white md:bg-transparent md:px-0 md:py-0 md:text-white"
+                      : "cursor-pointer hover:text-white hover:underline"
+                  }`}
+                >
+                  {id === "hero"
+                    ? "Home"
+                    : id === "sections"
+                    ? "Explore"
+                    : id === "testimonials"
+                    ? "Testimonials"
+                    : id === "register"
+                    ? "Register"
+                    : id === "faq"
+                    ? "FAQ"
+                    : "Contact"}
+                </button>
+              )
+            )}
 
-          <div
-            className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
-            onClick={toggleDarkMode}
-          >
             <div
-              className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
-                darkMode ? "translate-x-0" : "translate-x-8"
-              }`}
-            ></div>
+              className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
+              onClick={toggleDarkMode}
+            >
+              <div
+                className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
+                  darkMode ? "translate-x-0" : "translate-x-8"
+                }`}
+              ></div>
+            </div>
           </div>
         </div>
-
-        <button
-          onClick={() => scrollToSection("register")}
-          className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-center md:hidden hover:scale-105 transition"
-        >
-          Register
-        </button>
       </div>
     </div>
   );
