@@ -13,7 +13,7 @@ const Navbar = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navbarHeight = 64;
-  const extraOffset = 20;
+  const extraOffset = 10;
 
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
@@ -22,6 +22,11 @@ const Navbar = ({
       window.scrollTo({ top: elementPosition, behavior: "smooth" });
       setMenuOpen(false);
     }
+  };
+
+  const handleToggleDarkMode = () => {
+    toggleDarkMode();
+    setMenuOpen(false); // Close menu when toggling dark mode
   };
 
   return (
@@ -83,7 +88,7 @@ const Navbar = ({
 
             <div
               className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
-              onClick={toggleDarkMode}
+              onClick={handleToggleDarkMode}
             >
               <div
                 className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
@@ -100,7 +105,7 @@ const Navbar = ({
 
 export default function Home() {
   const navbarHeight = 64;
-  const extraOffset = 20;
+  const extraOffset = 10;
 
   const [darkMode, setDarkMode] = useState(true);
 
@@ -150,7 +155,7 @@ export default function Home() {
       <CustomCursor />
 
       {/* Background Glow */}
-      <div className="absolute left-1/2 top-0 z-[-20] w-full max-w-5xl -translate-x-1/2 overflow-hidden">
+      <div className="absolute left-1/2 top-0 z-[-20] w-full -translate-x-1/2 overflow-hidden">
         <div className="absolute top-[-80px] left-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] bg-pink-500 opacity-40 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[300px] h-[300px] bg-blue-500 opacity-30 rounded-full blur-3xl animate-pulse"></div>
@@ -162,26 +167,27 @@ export default function Home() {
       {/* HERO */}
       <section
         id="hero"
-        className="relative z-10 flex flex-col items-center text-center px-4 pt-36 pb-10"
+        className="relative z-10 flex flex-col items-center text-center pt-36 pb-10"
       >
-        <motion.h1
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent"
-        >
-          WryClip
-        </motion.h1>
-        <p className={`mt-4 text-lg max-w-xl ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-          Shifting The World Of Content Creation
-        </p>
-        <button
-          onClick={scrollToRegister}
-          className="mt-6 px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition font-semibold"
-        >
-          Join WryClip
-        </button>
-
+        <div className="max-w-4xl mx-auto px-4">
+          <motion.h1
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+            className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent"
+          >
+            WryClip
+          </motion.h1>
+          <p className={`mt-4 text-lg max-w-xl mx-auto ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            Shifting The World Of Content Creation
+          </p>
+          <button
+            onClick={scrollToRegister}
+            className="mt-6 px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition font-semibold"
+          >
+            Join WryClip
+          </button>
+        </div>
       </section>
 
       {/* Sections */}
