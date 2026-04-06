@@ -4,7 +4,7 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --primary-gradient: linear-gradient(90deg, #8b5cf6, #ec4899, #3b82f6); /* purple → pink → blue */
+  --primary-gradient: linear-gradient(90deg, #8b5cf6, #6366f1, #3b82f6); /* purple → blue */
 }
 
 @media (prefers-color-scheme: dark) {

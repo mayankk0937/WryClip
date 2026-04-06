@@ -3,7 +3,7 @@ import { useState } from "react";
 import CustomCursor from "./components/CustomCursor";
 import { motion } from "framer-motion";
 
-// Navbar (same)
+// Navbar
 const Navbar = ({
   darkMode,
   toggleDarkMode,
@@ -13,110 +13,164 @@ const Navbar = ({
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const navbarHeight = 64;
-  const extraOffset = 0;
+  const extraOffset = 20;
 
   const scrollToSection = (id: string) => {
+    setMenuOpen(false);
     const el = document.getElementById(id);
     if (el) {
       const elementPosition = el.offsetTop - navbarHeight - extraOffset;
       window.scrollTo({ top: elementPosition, behavior: "smooth" });
-      setMenuOpen(false);
     }
   };
 
-  const handleToggleDarkMode = () => {
-    toggleDarkMode();
-    setMenuOpen(false); // Close menu when toggling dark mode
-  };
+  const navLinks = [
+    { id: "hero", label: "Home" },
+    { id: "sections", label: "Explore" },
+    { id: "testimonials", label: "Testimonials" },
+    { id: "register", label: "Register" },
+    { id: "faq", label: "FAQ" },
+    { id: "contact", label: "Contact" },
+  ];
 
   return (
-    <div className="fixed top-0 left-0 w-full bg-black/30 backdrop-blur-md border-b border-white/10 z-50">
-      <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex w-full items-center justify-between gap-2 md:gap-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-              WryClip
-            </h1>
+    <>
+      <div className="fixed top-0 left-0 w-full flex justify-between items-center px-6 py-4 backdrop-blur-md bg-black/30 border-b border-white/10 z-50">
+        <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
+          WryClip
+        </h1>
 
-            <button
-              onClick={() => setMenuOpen((prev) => !prev)}
-              className="ml-2 flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white md:hidden"
-              aria-label="Toggle navigation menu"
+        <div className="hidden md:flex gap-6 text-gray-300 items-center">
+          {navLinks.map(({ id, label }, i) => (
+            <span
+              key={i}
+              onClick={() => scrollToSection(id)}
+              className="cursor-pointer hover:text-white hover:underline transition"
             >
-              <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "rotate(45deg) translateY(0.25rem)" : "none" }} />
-              <span className={`block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300 ${menuOpen ? "opacity-0" : "my-1"}`} />
-              <span className="block h-0.5 w-5 rounded-full bg-white shadow-sm transition-all duration-300" style={{ transform: menuOpen ? "-rotate(45deg) translateY(-0.25rem)" : "none" }} />
-            </button>
-          </div>
+              {label}
+            </span>
+          ))}
 
+          {/* Slide Toggle */}
+          <div
+            className="ml-4 relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
+            onClick={toggleDarkMode}
+          >
+            <div
+              className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${darkMode ? "translate-x-0" : "translate-x-8"
+                }`}
+            ></div>
+          </div>
+        </div>
+
+        <div className="hidden md:block">
           <button
             onClick={() => scrollToSection("register")}
-            className="hidden md:inline-flex px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition"
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-105 transition"
           >
             Register
           </button>
         </div>
 
-        <div className={`overflow-hidden transition-[max-height] duration-300 md:overflow-visible md:max-h-full ${menuOpen ? "max-h-96" : "max-h-0"} w-full z-30 relative`}>
-          <div className="flex flex-col gap-3 px-4 pb-4 text-gray-300 md:flex-row md:px-0 md:pb-0 md:items-center md:gap-6">
-            {["hero", "sections", "testimonials", "register", "faq", "contact"].map(
-              (id, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => scrollToSection(id)}
-                  className={`text-left transition ${
-                    id === "register"
-                      ? "rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-white md:bg-transparent md:px-0 md:py-0 md:text-white"
-                      : "cursor-pointer hover:text-white hover:underline"
-                  }`}
-                >
-                  {id === "hero"
-                    ? "Home"
-                    : id === "sections"
-                    ? "Explore"
-                    : id === "testimonials"
-                    ? "Testimonials"
-                    : id === "register"
-                    ? "Register"
-                    : id === "faq"
-                    ? "FAQ"
-                    : "Contact"}
-                </button>
-              )
-            )}
-
+        {/* Mobile Hamburger Icon */}
+        <div className="md:hidden flex items-center gap-4">
+          {/* Slide Toggle Mobile */}
+          <div
+            className="relative w-12 h-6 flex items-center bg-gray-300 rounded-full cursor-pointer"
+            onClick={toggleDarkMode}
+          >
             <div
-              className="relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
-              onClick={handleToggleDarkMode}
-            >
-              <div
-                className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${
-                  darkMode ? "translate-x-0" : "translate-x-8"
+              className={`absolute top-0 left-0 w-6 h-6 rounded-full bg-purple-500 transform transition-transform duration-300 ${darkMode ? "translate-x-0" : "translate-x-6"
                 }`}
-              ></div>
-            </div>
+            ></div>
           </div>
+          <button onClick={() => setMenuOpen(!menuOpen)} className="text-white focus:outline-none">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {menuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
-    </div>
+
+      {/* Mobile Menu Dropdown */}
+      {menuOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-[73px] left-0 w-full bg-gradient-to-b from-[#0a051a]/95 to-[#1c082b]/95 backdrop-blur-2xl rounded-b-3xl border-b border-white/10 z-40 flex flex-col items-center py-8 px-6 gap-4 md:hidden text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+        >
+          <div className="w-full flex flex-col gap-3">
+            {navLinks.map(({ id, label }, i) => (
+              <span
+                key={i}
+                onClick={() => scrollToSection(id)}
+                className="cursor-pointer text-lg font-medium tracking-wide bg-white/5 border border-white/10 py-3 rounded-xl hover:bg-white/10 hover:border-purple-500/50 hover:text-purple-300 transition text-center w-full shadow-sm"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => scrollToSection("register")}
+            className="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition-all font-bold shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+          >
+            Register Now
+          </button>
+        </motion.div>
+      )}
+    </>
   );
 };
 
 export default function Home() {
   const navbarHeight = 64;
-  const extraOffset = 0;
-
+  const extraOffset = 20;
   const [darkMode, setDarkMode] = useState(true);
 
-  // ✅ FORM STATE (ADD KIYA)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-  });
+  // Focus: Form states
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
   const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name && !formData.email && !formData.phone) return;
+
+    setPhoneError("");
+    const strippedPhone = formData.phone.replace(/\D/g, "");
+    if (strippedPhone.length !== 10) {
+      setPhoneError("Please enter a valid 10-digit mobile number! 📱");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const params = new URLSearchParams();
+    params.append('name', formData.name);
+    params.append('email', formData.email);
+    params.append('phone', formData.phone);
+
+    try {
+      await fetch("https://script.google.com/macros/s/AKfycby4M8nyS0fkpE9sNfkUWSJmtOkhyCm3fPDtiUSKk4-9ytuO-o4JFcyhQGkzjnsdM-EptQ/exec", {
+        method: "POST",
+        body: params,
+      });
+      setIsSuccess(true);
+      setFormData({ name: "", email: "", phone: "" });
+      setTimeout(() => setIsSuccess(false), 5000); // Reset animation state after 5 seconds
+    } catch (error) {
+      console.error("Error submitting form", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const scrollToRegister = () => {
     const el = document.getElementById("register");
@@ -126,40 +180,14 @@ export default function Home() {
     }
   };
 
-  // ✅ FORM FUNCTIONS (ADD KIYA)
-  const handleChange = (e: any) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-
-    await fetch(
-      "https://script.google.com/macros/s/AKfycbxhc8IRN8Kc8SGzFOnfmDJ850NhL8EcHwkd7WJeP1EJiWSs54o2hXX3Rp8pbV0gRpsw1Q/exec",
-      {
-        method: "POST",
-        body: JSON.stringify(formData),
-      }
-    );
-
-    alert("Form Submitted ✅");
-    setFormData({ name: "", email: "", phone: "" });
-  };
-
   return (
     <div
-      className={`${
-        darkMode ? "bg-gradient-to-br from-purple-900/90 via-black/80 to-blue-900/90" : "bg-gradient-to-br from-purple-100 via-white to-blue-100"
-      } relative min-h-screen overflow-x-hidden overflow-y-auto transition-colors duration-500`}
+      className={`${darkMode ? "bg-transparent text-white" : "bg-white text-black"
+        } relative min-h-screen overflow-x-hidden overflow-y-auto transition-colors duration-500`}
     >
+      {/* Cursor */}
       <CustomCursor />
 
-      {/* Background Glow */}
-      <div className="absolute left-1/2 top-0 z-[-20] w-full -translate-x-1/2 overflow-hidden">
-        <div className="absolute top-[-80px] left-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-[-80px] right-[-80px] w-[350px] h-[350px] bg-purple-600 opacity-40 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[300px] h-[300px] bg-purple-600 opacity-30 rounded-full blur-3xl animate-pulse"></div>
-      </div>
 
       {/* Navbar */}
       <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
@@ -167,87 +195,193 @@ export default function Home() {
       {/* HERO */}
       <section
         id="hero"
-        className="relative z-10 flex flex-col items-center text-center pt-36 pb-10"
+        className="relative z-10 flex flex-col items-center text-center px-4 pt-36 pb-10"
       >
-        <div className="max-w-4xl mx-auto px-4">
-          <motion.h1
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent"
-          >
-            WryClip
-          </motion.h1>
-          <p className={`mt-4 text-lg max-w-xl mx-auto ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Shifting The World Of Content Creation
-          </p>
-          <button
-            onClick={scrollToRegister}
-            className="mt-6 px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition font-semibold"
-          >
-            Join WryClip
-          </button>
-        </div>
+        <motion.h1
+          initial={{ opacity: 0, y: 30, scale: 0.9, filter: "blur(15px)" }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 1.2, ease: [0.25, 0.4, 0.25, 1] }}
+          className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-400 via-indigo-500 to-blue-500 bg-clip-text text-transparent tracking-tight"
+        >
+          WryClip
+        </motion.h1>
+        <p className={`mt-4 text-lg max-w-xl ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+          Shifting The World Of Content Creation
+        </p>
+        <button
+          onClick={scrollToRegister}
+          className="mt-6 px-8 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-105 transition font-semibold"
+        >
+          Join WryClip
+        </button>
       </section>
 
       {/* Sections */}
-      <section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
+      <section id="sections" className="mt-20 grid md:grid-cols-3 gap-8 max-w-5xl mx-auto px-4">
         {[
-          { title: "For Writers", desc: "Discover a powerful community of writers and unlock earning opportunities through your stories" },
-          { title: "For Creators", desc: "Bring your imagination to life and profit from your content." },
-          { title: "Talent Discovery", desc: "Experience stories with a cinematic edge." }
+          {
+            title: "For Writers",
+            desc: "Discover a powerful community of writers and unlock earning opportunities through your stories"
+          },
+          {
+            title: "For Creators",
+            desc: "Bring your imagination to life and profit from your content."
+          },
+          {
+            title: "Talent Discovery",
+            desc: "Experience stories with a cinematic edge."
+          }
         ].map((item, i) => (
-          <motion.div key={i} whileHover={{ scale: 1.05 }} className="p-6 rounded-2xl border border-white/10 backdrop-blur-lg bg-white/5">
+          <motion.div
+            key={i}
+            whileHover={{ scale: 1.05 }}
+            className={`p-6 rounded-2xl border border-white/10 cursor-pointer backdrop-blur-lg ${darkMode ? "bg-white/5" : "bg-black/5"
+              }`}
+          >
             <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-            <p className="text-gray-400">{item.desc}</p>
+            <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+              {item.desc}
+            </p>
           </motion.div>
         ))}
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="mt-32 max-w-6xl mx-auto px-4 text-center">
+      <section id="testimonials" className="mt-32 max-w-5xl mx-auto px-4 text-center">
         <h2 className={`text-3xl font-bold mb-10 ${darkMode ? "text-white" : "text-black"}`}>What People Are Saying</h2>
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { name:"~Mansi(@mansi(@mansi.hihihi_)", feedback:"Social media feels so filtered lately, so this concept is a breath of fresh air! We really needed a platform like this. Can’t wait for the launch! something big is brewing! The idea is super fresh and honestly, game-changing. Can't wait for the launch, counting down the days!" },
-            { name: "Aakanksha Bhat(Author Of - how to read when you hate reading)", feedback: "An app that thoughtfully bridges the gap between story writer and story teller. Can't wait for the launch! honestly that's a great initiative. What’s particularly compelling is the underlying philosophy valuing originality as an asset rather than a byproduct. Looking forward to seeing this platform come to life." },
-            { name: "~Dhruv, page- why_should.i_care", feedback: "Bringing writers, creators, and the audience together in one place, that’s where the real magic happens. If the execution is strong, this could seriously change how we consume stories.Honestlythis feels like something new and meaningful. Definitely excited to see how this turns out. Waiting for the launch! 🚀✨ " },
+            {
+              name: "~ Mansi",
+              handle: "@mansi.hihihi_",
+              link: "https://www.instagram.com/mansi.hihihi_?igsh=ZzhxOGlqbzU1bjRk",
+              feedback: "Social media feels so filtered lately, so this concept is a breath of fresh air! We really needed a platform like this. Can’t wait for the launch! something big is brewing! The idea is super fresh and honestly, game-changing. Can't wait for the launch, counting down the days!"
+            },
+            {
+              name: "~ Aakanksha Bhat (Author)",
+              handle: "",
+              link: "",
+              bookTitle: "How To Read When You Hate Reading",
+              bookLink: "https://amzn.in/d/05m16rck",
+              feedback: "An app that thoughtfully bridges the gap between story writer and story teller. Can't wait for the launch! honestly that's a great initiative. What’s particularly compelling is the underlying philosophy valuing originality as an asset rather than a byproduct. Looking forward to seeing this platform come to life."
+            },
+            {
+              name: "~ Dhruv",
+              handle: "@why_should.i_care",
+              link: "https://www.instagram.com/why_should.i_care?igsh=MTgyazUxeXhnZWN4ag==",
+              feedback: "Bringing writers, creators, and the audience together in one place, that’s where the real magic happens. If the execution is strong, this could seriously change how we consume stories. Honestly, this feels like something new and meaningful. Definitely excited to see how this turns out. Waiting for the launch! 🚀✨"
+            },
           ].map((t, i) => (
             <motion.div
               key={i}
               whileHover={{ scale: 1.05 }}
-              className={`p-6 rounded-2xl border border-white/10 cursor-pointer backdrop-blur-lg ${
-                darkMode ? "bg-white/5" : "bg-black/5"
-              }`}
+              className={`p-6 rounded-2xl border border-white/10 cursor-pointer backdrop-blur-lg flex flex-col justify-between ${darkMode ? "bg-white/5" : "bg-black/5"
+                }`}
             >
-              <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} italic`}>
+              <p className={`${darkMode ? "text-gray-300" : "text-gray-700"} italic leading-relaxed text-sm`}>
                 "{t.feedback}"
               </p>
-              <h4 className="mt-4 font-semibold">{t.name}</h4>
+              <div className="mt-4 flex flex-col items-center text-center">
+                <h4 className="font-semibold">{t.name}</h4>
+                {t.handle && (
+                  <a
+                    href={t.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 text-sm bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent font-medium hover:opacity-80 transition inline-flex items-center gap-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
+                    {t.handle}
+                  </a>
+                )}
+                {t.bookTitle && t.bookLink && (
+                  <a
+                    href={t.bookLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 text-sm bg-gradient-to-r from-orange-400 to-yellow-500 bg-clip-text text-transparent font-medium hover:opacity-80 transition inline-flex items-center gap-1.5"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-orange-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+                    {t.bookTitle}
+                  </a>
+                )}
+              </div>
             </motion.div>
           ))}
         </div>
       </section>
 
-      {/* ✅ REGISTER (ONLY UPDATED PART) */}
-      <section id="register" className="mt-32 max-w-3xl mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold mb-6">Register Now</h2>
+      {/* Registration */}
+      <section
+        id="register"
+        className="mt-32 max-w-2xl mx-auto px-4 text-center"
+      >
+        <h2 className={`text-3xl font-bold mb-6 ${darkMode ? "text-white" : "text-black"}`}>
+          Register Now
+        </h2>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-black/70 p-8 rounded-2xl border border-white/20 backdrop-blur-lg flex flex-col gap-4 shadow-lg"
-        >
-          <input name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" className="p-3 rounded-lg text-white"/>
-          <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" className="p-3 rounded-lg text-white"/>
-          <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone Number" className="p-3 rounded-lg text-white"/>
-
-          <button type="submit" className="py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500">
-            Submit
-          </button>
-        </form>
+        {/* Boxed Form */}
+        <div className="bg-black/70 dark:bg-white/10 p-8 rounded-2xl border border-white/20 backdrop-blur-3xl shadow-2xl relative overflow-hidden min-h-[300px] flex flex-col justify-center">
+          {isSuccess ? (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex flex-col items-center justify-center py-6"
+            >
+              <div className="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(34,197,94,0.4)] relative">
+                <motion.svg initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }} className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                </motion.svg>
+              </div>
+              <h3 className={`text-3xl font-bold mb-2 ${darkMode ? "text-white" : "text-green-500"}`}>Successfully Submitted!</h3>
+              <p className={darkMode ? "text-gray-300" : "text-gray-600"}>Thank you. We have saved your details securely.</p>
+            </motion.div>
+          ) : (
+            <form onSubmit={handleRegister} className="flex flex-col gap-4 w-full">
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Full Name"
+                className={`p-3 rounded-lg border outline-none focus:border-purple-500 transition-all duration-300 [&:not(:placeholder-shown)]:border-purple-500 ${darkMode ? "bg-black/90 border-gray-600 text-white [&:not(:placeholder-shown)]:bg-purple-900/40" : "bg-white border-gray-300 text-black [&:not(:placeholder-shown)]:bg-purple-50"}`}
+              />
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Email"
+                className={`p-3 rounded-lg border outline-none focus:border-purple-500 transition-all duration-300 [&:not(:placeholder-shown)]:border-purple-500 ${darkMode ? "bg-black/90 border-gray-600 text-white [&:not(:placeholder-shown)]:bg-purple-900/40" : "bg-white border-gray-300 text-black [&:not(:placeholder-shown)]:bg-purple-50"}`}
+              />
+              <input
+                type="tel"
+                required
+                value={formData.phone}
+                onChange={(e) => {
+                  setFormData({ ...formData, phone: e.target.value });
+                  if (phoneError) setPhoneError("");
+                }}
+                placeholder="Phone Number"
+                className={`p-3 rounded-lg border outline-none focus:border-purple-500 transition-all duration-300 [&:not(:placeholder-shown)]:border-purple-500 ${darkMode ? "bg-black/90 border-gray-600 text-white [&:not(:placeholder-shown)]:bg-purple-900/40" : "bg-white border-gray-300 text-black [&:not(:placeholder-shown)]:bg-purple-50"}`}
+              />
+              {phoneError && (
+                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-red-400 text-sm font-medium px-1">
+                  {phoneError}
+                </motion.div>
+              )}
+              <button disabled={isSubmitting} type="submit" className="py-3 mt-2 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 hover:scale-[1.02] active:scale-95 transition-all font-semibold shadow-[0_0_15px_rgba(168,85,247,0.4)] disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center min-h-[50px] text-white">
+                {isSubmitting ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : "Submit Details"}
+              </button>
+            </form>
+          )}
+        </div>
       </section>
+
       {/* FAQ */}
-      <section id="faq" className="mt-32 max-w-5xl mx-auto px-4">
+      <section id="faq" className="mt-32 max-w-4xl mx-auto px-4">
         <h2 className={`text-3xl font-bold mb-6 text-center ${darkMode ? "text-white" : "text-black"}`}>
           Frequently Asked Questions
         </h2>
@@ -268,43 +402,72 @@ export default function Home() {
       </section>
 
       {/* Contact */}
-      <section id="contact" className="relative mt-20 max-w-5xl mx-auto px-4 py-10">
-        {/* Glow */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-[-50px] left-[-50px] w-[250px] h-[250px] bg-purple-600 opacity-30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-[-50px] right-[-50px] w-[250px] h-[250px] bg-pink-500 opacity-30 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[200px] h-[200px] bg-blue-500 opacity-20 rounded-full blur-3xl animate-pulse"></div>
-        </div>
+      <section id="contact" className="relative mt-32 max-w-5xl mx-auto px-4 py-10">
+        <h2 className={`text-3xl font-bold mb-10 text-center ${darkMode ? "text-white" : "text-black"}`}>
+          Reach Out to Us
+        </h2>
 
-        <div className={`flex flex-col gap-4 text-center relative z-10 ${darkMode ? "text-white" : "text-black"}`}>
-          <p className={darkMode ? "text-gray-400" : "text-gray-700"}>Reach out to us at:</p>
-          <p>Kunj Shukla: +91 8076840003</p>
-          <p>Mayank: +91 8766231150</p>
-          <p>Email: <span className="text-purple-400">wryclip@gmail.com</span></p>
-          <div className="flex justify-center gap-4 mt-4">
-            <a
-              href="https://www.instagram.com/wryclip?igsh=MWo2b2Y5emo5aWNsdA=="
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:scale-105 transition"
-            >
-              <img src="/instagram.png" alt="Instagram" className="w-8 h-8"/>
-            </a>
-            <a
-              href="https://www.linkedin.com/in/wryclip-504b03400?utm_source=share_via&utm_content=profile&utm_medium=member_android"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:scale-105 transition"
-            >
-              <img src="/linkedin.png" alt="LinkedIn" className="w-8 h-8"/>
-            </a>
-          </div>
+        <div className="grid md:grid-cols-3 gap-6 relative z-10">
+
+          {/* Phone Box */}
+          <motion.div whileHover={{ scale: 1.05 }} className={`p-6 rounded-2xl border border-white/10 backdrop-blur-lg flex flex-col items-center text-center gap-2 shadow-xl ${darkMode ? "bg-white/5 text-white" : "bg-black/5 text-black"}`}>
+            <div className="w-14 h-14 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 mb-2">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+            </div>
+            <h3 className="text-xl font-semibold">Call Us</h3>
+            <p className={`mt-2 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>
+              Kunj Shukla: <br />
+              <a href="tel:+918076840003" className={`font-medium ${darkMode ? "text-purple-400 hover:text-purple-300" : "text-purple-600 hover:text-purple-500"} transition mt-1 inline-block`}>+91 8076840003</a>
+            </p>
+            <p className={darkMode ? "text-gray-400" : "text-gray-700"}>
+              Mayank: <br />
+              <a href="tel:+918766231150" className={`font-medium ${darkMode ? "text-purple-400 hover:text-purple-300" : "text-purple-600 hover:text-purple-500"} transition mt-1 inline-block`}>+91 8766231150</a>
+            </p>
+          </motion.div>
+
+          {/* Email Box */}
+          <motion.div whileHover={{ scale: 1.05 }} className={`p-6 rounded-2xl border border-white/10 backdrop-blur-lg flex flex-col items-center text-center gap-2 shadow-xl ${darkMode ? "bg-white/5 text-white" : "bg-black/5 text-black"}`}>
+            <div className="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 mb-2">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            </div>
+            <h3 className="text-xl font-semibold">Email Us</h3>
+            <p className={`mt-2 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>Drop us a line anytime.</p>
+            <a href="mailto:wryclip@gmail.com" className="text-blue-400 hover:text-blue-300 font-medium transition mt-1">wryclip@gmail.com</a>
+          </motion.div>
+
+          {/* Social Box */}
+          <motion.div whileHover={{ scale: 1.05 }} className={`p-6 rounded-2xl border border-white/10 backdrop-blur-lg flex flex-col items-center text-center gap-2 shadow-xl ${darkMode ? "bg-white/5 text-white" : "bg-black/5 text-black"}`}>
+            <div className="w-14 h-14 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-400 mb-2">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+            </div>
+            <h3 className="text-xl font-semibold">Connect & Follow</h3>
+            <p className={`mt-2 mb-2 ${darkMode ? "text-gray-400" : "text-gray-700"}`}>Stay updated on our socials.</p>
+            <div className="flex gap-4">
+              <a
+                href="https://www.instagram.com/wryclip?igsh=MWo2b2Y5emo5aWNsdA=="
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg ${darkMode ? "bg-white/5 hover:bg-pink-500/20 text-white hover:text-pink-400" : "bg-black/5 hover:bg-pink-500/10 text-black hover:text-pink-500 border border-black/10"}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
+              </a>
+              <a
+                href="https://www.linkedin.com/in/wryclip-504b03400?utm_source=share_via&utm_content=profile&utm_medium=member_android"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg ${darkMode ? "bg-white/5 hover:bg-blue-500/20 text-white hover:text-blue-400" : "bg-black/5 hover:bg-blue-500/10 text-black hover:text-blue-500 border border-black/10"}`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" /><rect width="4" height="12" x="2" y="9" /><circle cx="4" cy="4" r="2" /></svg>
+              </a>
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
       {/* Footer */}
-      <footer className={`mt-16 py-10 px-4 ${darkMode ? "bg-purple-800/80 text-gray-300" : "bg-white text-gray-700"}`}>
-        <p className="text-center mt-6">© 2026 WryClip. All rights reserved.</p>
+      <footer className={`mt-16 py-6 px-4 ${darkMode ? " text-gray-400" : "bg-white text-gray-700"}`}>
+        <p className="text-center text-sm">© 2026 WryClip. All rights reserved.</p>
       </footer>
     </div>
   );
