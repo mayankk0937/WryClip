@@ -12,8 +12,26 @@ const Navbar = ({
   toggleDarkMode: () => void;
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navbarHeight = 64;
   const extraOffset = 20;
+
+  // Track scroll and screen size
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    
+    handleScroll();
+    handleResize();
+    
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   // Lock background scroll when mobile menu is open
   useEffect(() => {
@@ -48,9 +66,44 @@ const Navbar = ({
     { id: "contact", label: "Contact" },
   ];
 
+  const isFloating = scrolled && isMobile;
+
   return (
     <>
-      <div className={`fixed top-0 left-0 w-full flex justify-between items-center px-6 py-4 backdrop-blur-md border-b z-50 transition-colors duration-500 ${darkMode ? "bg-black/30 border-white/10" : "bg-white/80 border-black/10 shadow-lg"}`}>
+      <motion.div
+        initial={false}
+        animate={{
+          top: isFloating ? 16 : 0,
+          width: isFloating ? "92%" : "100%",
+          maxWidth: isFloating ? 1200 : "100%",
+          borderRadius: isFloating ? 100 : 0,
+          paddingLeft: isFloating ? 32 : 24,
+          paddingRight: isFloating ? 32 : 24,
+          paddingTop: isFloating ? 10 : 16,
+          paddingBottom: isFloating ? 10 : 16,
+          scale: isFloating ? 0.98 : 1,
+          x: isFloating ? "-50%" : "0%",
+          left: isFloating ? "50%" : "0%",
+          backgroundColor: darkMode 
+            ? (scrolled ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.2)") 
+            : (scrolled ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.8)"),
+          borderColor: darkMode 
+            ? (scrolled ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)") 
+            : "rgba(0, 0, 0, 0.1)",
+          boxShadow: isFloating 
+            ? "0 30px 60px rgba(0,0,0,0.4)" 
+            : scrolled 
+              ? "0 4px 20px rgba(0,0,0,0.1)" 
+              : "0 1px 2px rgba(0,0,0,0.05)",
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 120,
+          damping: 20,
+          mass: 0.6
+        }}
+        className={`fixed z-50 flex justify-between items-center backdrop-blur-xl border-b`}
+      >
         <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-500 bg-clip-text text-transparent">
           WryClip
         </h1>
@@ -152,14 +205,27 @@ const Navbar = ({
             </svg>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Mobile Menu Dropdown */}
       {menuOpen && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`fixed top-[73px] left-0 w-full backdrop-blur-2xl rounded-b-3xl border-b z-40 flex flex-col items-center py-8 px-6 gap-4 md:hidden transition-colors duration-500 ${darkMode ? "bg-gradient-to-b from-[#0a051a]/95 to-[#1c082b]/95 border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]" : "bg-gradient-to-b from-white/95 to-gray-50/95 border-black/10 text-black shadow-[0_20px_50px_rgba(0,0,0,0.1)]"}`}
+          initial={{ opacity: 0, scale: 0.95, y: -20 }}
+          animate={{ 
+            opacity: 1, 
+            scale: 1, 
+            y: 0,
+            top: scrolled ? 80 : 70, // Adjust based on floating header height
+            width: scrolled ? "92%" : "100%",
+            left: scrolled ? "4%" : "0%",
+            borderRadius: scrolled ? 24 : "0 0 24px 24px",
+          }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          className={`fixed backdrop-blur-2xl border z-40 flex flex-col items-center py-8 px-6 gap-4 md:hidden 
+            ${darkMode 
+              ? "bg-black/80 border-white/10 text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)]" 
+              : "bg-white/90 border-black/10 text-black shadow-[0_20px_50px_rgba(0,0,0,0.1)]"
+            }`}
         >
           <div className="w-full flex flex-col gap-3">
             {navLinks.map(({ id, label }, i) => (
@@ -519,7 +585,6 @@ export default function Home() {
               </a>
             </div>
           </motion.div>
-
         </div>
       </section>
 
