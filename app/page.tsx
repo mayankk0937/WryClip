@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CustomCursor from "./components/CustomCursor";
 import { motion } from "framer-motion";
 
@@ -14,6 +14,21 @@ const Navbar = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const navbarHeight = 64;
   const extraOffset = 20;
+
+  // Lock background scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
+    };
+  }, [menuOpen]);
 
   const scrollToSection = (id: string) => {
     setMenuOpen(false);
@@ -51,16 +66,38 @@ const Navbar = ({
             </span>
           ))}
 
-          {/* Slide Toggle */}
-          <div
-            className="ml-4 relative w-16 h-8 flex items-center bg-gray-300 rounded-full cursor-pointer"
+          {/* Premium Theme Toggle - Desktop */}
+          <button
             onClick={toggleDarkMode}
+            aria-label="Toggle theme"
+            className={`ml-4 relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none group
+              ${darkMode
+                ? "bg-white/5 border border-purple-500/40 shadow-[0_0_14px_rgba(168,85,247,0.35)] hover:shadow-[0_0_22px_rgba(168,85,247,0.6)] hover:border-purple-400"
+                : "bg-amber-50 border border-amber-400/60 shadow-[0_0_14px_rgba(251,191,36,0.4)] hover:shadow-[0_0_22px_rgba(251,191,36,0.7)] hover:border-amber-300"
+              }`}
           >
-            <div
-              className={`absolute top-0 left-0 w-8 h-8 rounded-full bg-purple-500 transform transition-transform duration-300 ${darkMode ? "translate-x-0" : "translate-x-8"
-                }`}
-            ></div>
-          </div>
+            <motion.div
+              key={darkMode ? "moon" : "sun"}
+              initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
+              animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              exit={{ rotate: 90, scale: 0.5, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              {!darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              )}
+            </motion.div>
+          </button>
         </div>
 
         <div className="hidden md:block">
@@ -74,16 +111,37 @@ const Navbar = ({
 
         {/* Mobile Hamburger Icon */}
         <div className="md:hidden flex items-center gap-4">
-          {/* Slide Toggle Mobile */}
-          <div
-            className="relative w-12 h-6 flex items-center bg-gray-300 rounded-full cursor-pointer"
+          {/* Premium Theme Toggle - Mobile */}
+          <button
             onClick={toggleDarkMode}
+            aria-label="Toggle theme"
+            className={`relative w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 focus:outline-none
+              ${darkMode
+                ? "bg-white/5 border border-purple-500/40 shadow-[0_0_12px_rgba(168,85,247,0.4)] hover:shadow-[0_0_20px_rgba(168,85,247,0.6)]"
+                : "bg-amber-50 border border-amber-400/60 shadow-[0_0_12px_rgba(251,191,36,0.4)] hover:shadow-[0_0_20px_rgba(251,191,36,0.7)]"
+              }`}
           >
-            <div
-              className={`absolute top-0 left-0 w-6 h-6 rounded-full bg-purple-500 transform transition-transform duration-300 ${darkMode ? "translate-x-0" : "translate-x-6"
-                }`}
-            ></div>
-          </div>
+            <motion.div
+              key={darkMode ? "moon-m" : "sun-m"}
+              initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
+              animate={{ rotate: 0, scale: 1, opacity: 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              {!darkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              )}
+            </motion.div>
+          </button>
           <button onClick={() => setMenuOpen(!menuOpen)} className={`focus:outline-none ${darkMode ? "text-white" : "text-black"}`}>
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {menuOpen ? (
