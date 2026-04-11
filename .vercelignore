@@ -1,5 +1,4 @@
 # Ignore nested workspace artifacts and local files
-wryclip/
 node_modules/
 .vscode/
 .DS_Store
