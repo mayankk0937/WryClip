@@ -208,9 +208,9 @@ export default function AboutPage() {
               <span className="text-blue-400 font-semibold tracking-wider uppercase text-[10px] mb-4 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/15">CTO</span>
               <div 
                 className="w-28 h-28 rounded-full overflow-hidden border-2 border-blue-500/30 mb-4 shadow-[0_0_20px_rgba(59,130,246,0.35)] bg-gradient-to-tr from-blue-500 to-indigo-500 cursor-pointer hover:scale-105 transition-transform duration-300"
-                onClick={() => setSelectedImage("/cto-profile.jpeg")}
+                onClick={() => setSelectedImage("/cto-profile.png")}
               >
-                <img src="/cto-profile.jpeg" alt="Mayank Kumar - CTO" className="w-full h-full object-cover" />
+                <img src="/cto-profile.png" alt="Mayank Kumar - CTO" className="w-full h-full object-cover" />
               </div>
               <h3 className="text-lg font-bold mb-1">Mayank Kumar</h3>
               <p className={`text-xs font-medium mb-3 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Chief Technology Officer</p>
