@@ -14,7 +14,6 @@ interface Profile {
   avatar_url: string | null;
   tags: string[] | null;
   subscription_status: string | null;
-  email?: string | null;
 }
 
 interface Post {
@@ -50,14 +49,6 @@ export default function PortfolioView({ username, darkMode = true }: { username:
   const [activeScript, setActiveScript] = useState<Post | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [copiedScriptId, setCopiedScriptId] = useState<string | null>(null);
-  const [isTearing, setIsTearing] = useState(false);
-
-  const triggerTear = () => {
-    setIsTearing(true);
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 700);
-  };
 
   useEffect(() => {
     if (!username) return;
@@ -74,7 +65,7 @@ export default function PortfolioView({ username, darkMode = true }: { username:
         // 1. Fetch Profile (case-insensitive username lookup)
         const { data: profileData, error: profileError } = await client
           .from("profiles")
-          .select("id, username, full_name, bio, role, avatar_url, tags, subscription_status, email")
+          .select("id, username, full_name, bio, role, avatar_url, tags, subscription_status")
           .ilike("username", username)
           .maybeSingle();
 
@@ -339,7 +330,7 @@ export default function PortfolioView({ username, darkMode = true }: { username:
   // 1. WRITER PRO LAYOUT
   const renderWriterProLayout = () => {
     const writerLikes = writerPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
-    const emailAddress = profile.email || "mayank0522.s@gmail.com";
+    const emailAddress = "support.wryclip@gmail.com";
     const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent("WryClip Screenplay Optioning Inquiry")}&body=${encodeURIComponent(`Hi @${profile.username}, we reviewed your Writer Pro screenplay portfolio on WryClip and would like to discuss options / licensing for your scripts...`)}`;
 
     return (
@@ -675,7 +666,7 @@ export default function PortfolioView({ username, darkMode = true }: { username:
   // 2. CREATOR PRO LAYOUT
   const renderCreatorProLayout = () => {
     const creatorLikes = creatorPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
-    const emailAddress = profile.email || "mayank0522.s@gmail.com";
+    const emailAddress = "support.wryclip@gmail.com";
     const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent("WryClip Brand Collaboration Proposal")}&body=${encodeURIComponent(`Hi @${profile.username}, we found your Creator Pro video portfolio on WryClip and would like to discuss a project...`)}`;
 
     return (
@@ -1112,75 +1103,8 @@ export default function PortfolioView({ username, darkMode = true }: { username:
 
   return (
     <>
-      {/* Page Tearing Animation Overlay */}
-      {isTearing && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-black pointer-events-none">
-          {/* Left Half of Page */}
-          <motion.div
-            initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-            animate={{ x: -600, y: 400, rotate: -15, opacity: 0 }}
-            transition={{ duration: 0.7, ease: "easeIn" }}
-            className={`absolute inset-0 ${isCreatorTemplate ? "bg-[#050208]" : "bg-[#050811]"}`}
-            style={{
-              clipPath: 'polygon(0% 0%, 50% 0%, 48% 10%, 52% 20%, 48% 30%, 52% 40%, 48% 50%, 52% 60%, 48% 70%, 52% 80%, 48% 90%, 50% 100%, 0% 100%)',
-            }}
-          >
-            <div className="w-full h-full opacity-60 pointer-events-none select-none">
-              {isCreatorTemplate ? renderCreatorProLayout() : renderWriterProLayout()}
-            </div>
-          </motion.div>
-
-          {/* Right Half of Page */}
-          <motion.div
-            initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-            animate={{ x: 600, y: 400, rotate: 15, opacity: 0 }}
-            transition={{ duration: 0.7, ease: "easeIn" }}
-            className={`absolute inset-0 ${isCreatorTemplate ? "bg-[#050208]" : "bg-[#050811]"}`}
-            style={{
-              clipPath: 'polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%, 48% 90%, 52% 80%, 48% 70%, 52% 60%, 48% 50%, 52% 40%, 48% 30%, 52% 20%, 48% 10%)',
-            }}
-          >
-            <div className="w-full h-full opacity-60 pointer-events-none select-none">
-              {isCreatorTemplate ? renderCreatorProLayout() : renderWriterProLayout()}
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Floating Dog-ear Corner to tear page */}
-      {!isTearing && (
-        <div className="fixed top-0 right-0 z-50 print-hidden group">
-          <div className="absolute right-24 top-6 bg-black/80 border border-white/10 text-[9px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-lg text-white pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap shadow-2xl">
-            Pull corner down to tear page & exit 📄
-          </div>
-          <motion.div
-            drag
-            dragConstraints={{ top: 0, right: 0, left: -200, bottom: 200 }}
-            dragElastic={0.1}
-            onDrag={(event, info) => {
-              const distance = Math.sqrt(info.offset.x ** 2 + info.offset.y ** 2);
-              if (distance > 120) {
-                triggerTear();
-              }
-            }}
-            className="w-20 h-20 bg-gradient-to-bl from-white/15 to-transparent border-l border-b border-white/20 rounded-bl-3xl shadow-xl backdrop-blur-md flex items-center justify-center cursor-grab active:cursor-grabbing text-xs select-none"
-          >
-            <div className="text-center font-bold text-[9px] text-white flex flex-col items-center gap-0.5 pointer-events-none">
-              <span>📄</span>
-              <span>PULL TO</span>
-              <span className={isCreatorTemplate ? "text-pink-500 font-extrabold animate-pulse" : "text-cyan-400 font-extrabold animate-pulse"}>TEAR</span>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Normal Layout */}
-      {!isTearing && (
-        <>
-          {isCreatorTemplate ? renderCreatorProLayout() : renderWriterProLayout()}
-          {renderSharedModal()}
-        </>
-      )}
+      {isCreatorTemplate ? renderCreatorProLayout() : renderWriterProLayout()}
+      {renderSharedModal()}
     </>
   );
 }
