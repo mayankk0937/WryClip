@@ -55,8 +55,13 @@ export default function PortfolioView({ username }: { username: string }) {
       setLoading(true);
       setError(null);
       try {
+        const client = supabase;
+        if (!client) {
+          throw new Error("Supabase is not configured. Please set the environment variables.");
+        }
+
         // 1. Fetch Profile (case-insensitive username lookup)
-        const { data: profileData, error: profileError } = await supabase
+        const { data: profileData, error: profileError } = await client
           .from("profiles")
           .select("id, username, full_name, bio, role, avatar_url, tags, subscription_status")
           .ilike("username", username)
@@ -73,7 +78,7 @@ export default function PortfolioView({ username }: { username: string }) {
         setProfile(profileData);
 
         // 2. Fetch public, published creations created by this writer (excluding video reels/series)
-        const { data: postsData, error: postsError } = await supabase
+        const { data: postsData, error: postsError } = await client
           .from("posts")
           .select("*")
           .eq("user_id", profileData.id)
@@ -98,11 +103,11 @@ export default function PortfolioView({ username }: { username: string }) {
           const postIds = fetchedPosts.map((p) => p.id);
 
           const [likesRes, savesRes] = await Promise.all([
-            supabase
+            client
               .from("likes")
               .select("post_id")
               .in("post_id", postIds),
-            supabase
+            client
               .from("saves")
               .select("post_id")
               .in("post_id", postIds),
