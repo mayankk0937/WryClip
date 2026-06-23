@@ -1,14 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ComingSoonModal from "./components/ComingSoonModal";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import PortfolioView from "./components/PortfolioView";
 
 import { usePersistedTheme } from "./components/usePersistedTheme";
 
-export default function Home() {
+function HomeContent() {
   const navbarHeight = 64;
   const extraOffset = 20;
   const [darkMode, toggleDarkMode] = usePersistedTheme();
@@ -169,6 +171,22 @@ export default function Home() {
     }
   ];
 
+  const searchParams = useSearchParams();
+  const writer = searchParams ? searchParams.get("writer") : null;
+
+  if (writer) {
+    return (
+      <div
+        className={`${darkMode ? "bg-transparent text-white" : "bg-white text-black"
+          } relative min-h-screen overflow-x-hidden overflow-y-auto transition-colors duration-500`}
+      >
+        <Navbar darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+        <PortfolioView username={writer} />
+        <Footer darkMode={darkMode} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`${darkMode ? "bg-transparent text-white" : "bg-white text-black"
@@ -222,6 +240,105 @@ export default function Home() {
           >
             Explore Opportunities →
           </a>
+        </div>
+
+        {/* ─── Premium Portfolio Discovery Section ─── */}
+        <div className="mt-14 w-full max-w-xl mx-auto px-4 relative z-20">
+          {/* Glow halos */}
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-72 h-24 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-56 h-16 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Card */}
+          <div className="relative rounded-3xl overflow-hidden border border-white/[0.08] bg-white/[0.03] backdrop-blur-2xl shadow-[0_8px_40px_rgba(139,92,246,0.18)] p-5 sm:p-7">
+            {/* Top shimmer border */}
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-70" />
+            {/* Corner glow accents */}
+            <div className="absolute top-0 right-0 w-28 h-28 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Header row */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-purple-500/30 to-cyan-500/20 border border-white/10 flex items-center justify-center text-sm sm:text-base shrink-0">
+                  🔍
+                </div>
+                <div>
+                  <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.12em] text-purple-400 leading-tight">Creator Portfolios</p>
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium leading-tight">Discover verified WryClip writers</p>
+                </div>
+              </div>
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] sm:text-[9px] font-bold text-emerald-400 uppercase tracking-wider shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                Live
+              </span>
+            </div>
+
+            {/* Search Form — stacked on mobile, inline on sm+ */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const input = (form.elements.namedItem("hero-search") as HTMLInputElement).value.trim();
+                if (input) {
+                  window.location.search = `?writer=${encodeURIComponent(input)}`;
+                }
+              }}
+              className="relative group mb-4"
+            >
+              {/* Focus glow ring */}
+              <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-purple-600/0 via-purple-500/40 to-cyan-500/0 opacity-0 group-focus-within:opacity-100 transition-all duration-500 blur-[2px]" />
+
+              <div className="relative rounded-2xl bg-black/40 border border-white/10 group-focus-within:border-purple-500/40 transition-all duration-300 backdrop-blur-xl overflow-hidden">
+                {/* Input row */}
+                <div className="flex items-center gap-1 px-3 pt-3 pb-2">
+                  <span className="text-gray-500 text-sm font-bold shrink-0">@</span>
+                  <input
+                    type="text"
+                    name="hero-search"
+                    placeholder="username  (e.g. mayank9307)"
+                    className="flex-1 bg-transparent text-sm text-white placeholder-gray-600 outline-none font-semibold min-w-0"
+                    required
+                  />
+                </div>
+                {/* Submit button — full width below input on all screens */}
+                <div className="px-2 pb-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-cyan-500 text-white text-xs font-black rounded-xl tracking-wider uppercase transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_16px_rgba(139,92,246,0.35)] cursor-pointer"
+                  >
+                    View Portfolio →
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Quick Access Chips */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[9px] text-gray-600 font-bold uppercase tracking-wider">Try:</span>
+              {[
+                { username: "mayank9307", color: "purple" },
+                { username: "kunjshukla", color: "cyan" },
+                { username: "anhad", color: "pink" },
+              ].map(({ username, color }) => (
+                <button
+                  key={username}
+                  onClick={() => { window.location.search = `?writer=${username}`; }}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer border ${
+                    color === "purple"
+                      ? "bg-purple-500/10 border-purple-500/20 text-purple-300 hover:bg-purple-500/20"
+                      : color === "cyan"
+                      ? "bg-cyan-500/10 border-cyan-500/20 text-cyan-300 hover:bg-cyan-500/20"
+                      : "bg-pink-500/10 border-pink-500/20 text-pink-300 hover:bg-pink-500/20"
+                  }`}
+                >
+                  @{username}
+                </button>
+              ))}
+            </div>
+
+            {/* Bottom shimmer */}
+            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+          </div>
         </div>
       </section>
 
@@ -573,5 +690,20 @@ export default function Home() {
       {/* Coming Soon Modal */}
       <ComingSoonModal isOpen={isComingSoonOpen} onClose={() => setIsComingSoonOpen(false)} />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-semibold text-purple-400">Loading WryClip...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
