@@ -14,6 +14,7 @@ interface Profile {
   avatar_url: string | null;
   tags: string[] | null;
   subscription_status: string | null;
+  email?: string | null;
 }
 
 interface Post {
@@ -30,6 +31,8 @@ interface Post {
   script_language: string | null;
   script_status: string | null;
   created_at: string;
+  genre?: string | null;
+  likes_count?: number;
 }
 
 interface Stats {
@@ -63,7 +66,7 @@ export default function PortfolioView({ username, darkMode = true }: { username:
         // 1. Fetch Profile (case-insensitive username lookup)
         const { data: profileData, error: profileError } = await client
           .from("profiles")
-          .select("id, username, full_name, bio, role, avatar_url, tags, subscription_status")
+          .select("id, username, full_name, bio, role, avatar_url, tags, subscription_status, email")
           .ilike("username", username)
           .maybeSingle();
 
@@ -77,28 +80,20 @@ export default function PortfolioView({ username, darkMode = true }: { username:
 
         setProfile(profileData);
 
-        // 2. Fetch public, published creations created by this writer (excluding video reels/series)
+        // 2. Fetch public, published creations created by this writer/creator (all posts, text + video)
         const { data: postsData, error: postsError } = await client
           .from("posts")
           .select("*")
           .eq("user_id", profileData.id)
           .eq("status", "published")
           .eq("visibility", "public")
-          .neq("post_type", "video")
-          .neq("category", "Reels")
-          .neq("category", "Series")
           .order("created_at", { ascending: false });
 
         if (postsError) throw postsError;
 
         const fetchedPosts = (postsData || []) as Post[];
-        setPosts(fetchedPosts);
 
-        // 3. Aggregate stats:
-        // - saves: fetched from `saves` table, counted per-post (same as mobile app getFeedCounts)
-        // - likes: fetched from `likes` table
-        // NOTE: saves_count on posts table is only an in-memory counter in the app; it is never
-        //       persisted back to Supabase, so the saves table is the authoritative source.
+        // 3. Aggregate stats and map likes_count to individual posts
         if (fetchedPosts.length > 0) {
           const postIds = fetchedPosts.map((p) => p.id);
 
@@ -113,12 +108,25 @@ export default function PortfolioView({ username, darkMode = true }: { username:
               .in("post_id", postIds),
           ]);
 
+          const likesMap: Record<string, number> = {};
+          likesRes.data?.forEach((like) => {
+            likesMap[like.post_id] = (likesMap[like.post_id] || 0) + 1;
+          });
+
+          const postsWithLikes = fetchedPosts.map((p) => ({
+            ...p,
+            likes_count: likesMap[p.id] || 0,
+          }));
+
+          setPosts(postsWithLikes);
+
           setStats({
             scriptsCount: fetchedPosts.length,
             totalLikes: likesRes.data?.length || 0,
             totalSaves: savesRes.data?.length || 0,
           });
         } else {
+          setPosts([]);
           setStats({
             scriptsCount: 0,
             totalLikes: 0,
@@ -162,70 +170,6 @@ export default function PortfolioView({ username, darkMode = true }: { username:
     });
   };
 
-  const getPostTypeLabel = (post: Post) => {
-    const type = post.post_type?.toLowerCase() || "script";
-    const cat = post.category?.toLowerCase() || "";
-    
-    if (type === "script") return "Script";
-    if (type === "collab") return "Collab";
-    if (type === "story") {
-      if (cat === "poem" || cat === "poetry") return "Poem";
-      if (cat === "ghazal") return "Ghazal";
-      return "Story";
-    }
-    return "Creation";
-  };
-
-  const getPostTypeIcon = (post: Post) => {
-    const type = post.post_type?.toLowerCase() || "script";
-    const cat = post.category?.toLowerCase() || "";
-    
-    if (type === "script") return "🎬";
-    if (type === "collab") return "🤝";
-    if (type === "story") {
-      if (cat === "poem" || cat === "poetry" || cat === "ghazal") return "✍️";
-      return "📖";
-    }
-    return "📝";
-  };
-
-  const getPostTypeColor = (post: Post) => {
-    const type = post.post_type?.toLowerCase() || "script";
-    const cat = post.category?.toLowerCase() || "";
-    
-    if (darkMode) {
-      if (type === "script") return "text-cyan-400 border-cyan-500/20 bg-cyan-500/10";
-      if (type === "collab") return "text-pink-400 border-pink-500/20 bg-pink-500/10";
-      if (type === "story") {
-        if (cat === "poem" || cat === "poetry" || cat === "ghazal") return "text-violet-400 border-violet-500/20 bg-violet-500/10";
-        return "text-purple-400 border-purple-500/20 bg-purple-500/10";
-      }
-      return "text-blue-400 border-blue-500/20 bg-blue-500/10";
-    } else {
-      if (type === "script") return "text-cyan-700 border-cyan-500/30 bg-cyan-500/10";
-      if (type === "collab") return "text-pink-700 border-pink-500/30 bg-pink-500/10";
-      if (type === "story") {
-        if (cat === "poem" || cat === "poetry" || cat === "ghazal") return "text-violet-700 border-violet-500/30 bg-violet-500/10";
-        return "text-purple-700 border-purple-500/30 bg-purple-500/10";
-      }
-      return "text-blue-700 border-blue-500/30 bg-blue-500/10";
-    }
-  };
-
-  const getPostIdPrefix = (post: Post) => {
-    const type = post.post_type?.toLowerCase() || "script";
-    if (type === "script") return "WR-";
-    if (type === "collab") return "CL-";
-    if (type === "story") return "ST-";
-    return "CR-";
-  };
-
-  const getScriptId = (post: Post) => {
-    const prefix = getPostIdPrefix(post);
-    const segment = post.id.split("-")[0] || post.id;
-    return `${prefix}${segment.toUpperCase()}`;
-  };
-
   const handleCopyText = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedScriptId(id);
@@ -239,6 +183,12 @@ export default function PortfolioView({ username, darkMode = true }: { username:
     setTimeout(() => {
       document.title = originalTitle;
     }, 100);
+  };
+
+  const handleDownloadApp = () => {
+    if (typeof window !== 'undefined') {
+      window.open('/download', '_blank');
+    }
   };
 
   // Determine if profile is verified under "Writer Pro" or standard tier
@@ -285,7 +235,7 @@ export default function PortfolioView({ username, darkMode = true }: { username:
     );
   }
 
-  // Error / Error Fallback
+  // Error Fallback
   if (error) {
     return (
       <div className={`min-h-screen bg-transparent ${darkMode ? "text-white" : "text-gray-900"} pt-40 pb-20 px-4 flex flex-col items-center justify-center max-w-md mx-auto text-center`}>
@@ -360,515 +310,802 @@ export default function PortfolioView({ username, darkMode = true }: { username:
     );
   }
 
-  return (
-    <div className={`min-h-screen bg-transparent ${darkMode ? "text-white" : "text-gray-900"} pt-28 pb-20 px-4 md:px-8 max-w-5xl mx-auto flex flex-col gap-8 relative z-10 portfolio-print-wrapper`}>
-      
-      {/* Back to Homepage Button */}
-      <div className="print-hidden -mb-4">
-        <a
-          href="/"
-          className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 font-bold transition cursor-pointer"
-        >
-          ← Back to Homepage
-        </a>
-      </div>
+  // Decider Logic for Layout Types
+  const roleNorm = profile.role?.toLowerCase() || '';
+  const isWriter = ['writer pro', 'writer', 'poet', 'script writer'].includes(roleNorm);
+  const isCreator = ['creator pro', 'creator', 'studio pro', 'filmmaker', 'director', 'producer', 'actor'].includes(roleNorm);
 
-      {/* 1. Header Card (Glassmorphic) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className={`w-full rounded-3xl ${
-          darkMode 
-            ? "bg-white/[0.03] border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)]" 
-            : "bg-black/[0.02] border-black/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.05)]"
-        } backdrop-blur-xl border p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8 items-center relative overflow-hidden portfolio-header-card`}
-      >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+  const writerPosts = posts.filter(p => p.post_type !== 'video');
+  const creatorPosts = posts.filter(p => p.post_type === 'video' || p.category === 'Reels' || p.category === 'Series');
 
-        {/* Profile Avatar / Initials */}
-        <div className="shrink-0 relative">
-          <div
-            className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center border-2 ${
-              isWriterPro
-                ? "border-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.5)]"
-                : darkMode ? "border-white/10" : "border-black/10"
-            }`}
+  let isCreatorTemplate = false;
+  if (isWriter) {
+    isCreatorTemplate = false;
+  } else if (isCreator) {
+    isCreatorTemplate = true;
+  } else {
+    // Admin/Core roles -> compare counts
+    isCreatorTemplate = creatorPosts.length > writerPosts.length;
+  }
+
+  // 1. WRITER PRO LAYOUT
+  const renderWriterProLayout = () => {
+    const writerLikes = writerPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
+    const emailAddress = profile.email || "mayank0522.s@gmail.com";
+    const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent("WryClip Screenplay Optioning Inquiry")}&body=${encodeURIComponent(`Hi @${profile.username}, we reviewed your Writer Pro screenplay portfolio on WryClip and would like to discuss options / licensing for your scripts...`)}`;
+
+    return (
+      <div className={`min-h-screen pt-28 pb-20 px-4 md:px-8 max-w-5xl mx-auto flex flex-col gap-8 relative z-10 portfolio-print-wrapper`}>
+        {/* Background Atmosphere */}
+        <div className="fixed inset-0 -z-10 bg-gradient-to-b from-[#050811] via-[#0a101f] to-[#000000] pointer-events-none" />
+        <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-cyan-500/10 blur-[120px] pointer-events-none" />
+        <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-indigo-500/10 blur-[150px] pointer-events-none" />
+
+        {/* Back to Homepage Button */}
+        <div className="print-hidden -mb-4">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-bold transition cursor-pointer"
           >
-            {profile.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = "none";
-                  const fallbackDiv = document.getElementById("avatar-fallback");
-                  if (fallbackDiv) fallbackDiv.style.display = "flex";
-                }}
-              />
-            ) : null}
-            <div
-              id="avatar-fallback"
-              className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-950 flex items-center justify-center font-bold text-3xl tracking-wide text-cyan-300"
-              style={{ display: profile.avatar_url ? "none" : "flex" }}
-            >
-              {getInitials(profile.full_name)}
-            </div>
-          </div>
+            ← Back to Homepage
+          </a>
         </div>
 
-        {/* Profile Info Details */}
-        <div className="flex-1 text-center md:text-left">
-          <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2 justify-center md:justify-start">
-            <h1 className={`text-2xl md:text-3xl font-extrabold tracking-tight ${darkMode ? "text-white" : "text-gray-900"} flex items-center justify-center md:justify-start gap-2`}>
-              {profile.full_name}
+        {/* Branding Header */}
+        <div className="flex justify-between items-center border-b border-white/10 pb-6 mb-2 print-hidden">
+          <div className="flex items-center gap-3">
+            <img src="/bg-logo.jpeg" alt="WryClip Logo" className="w-10 h-10 rounded-xl object-cover border border-cyan-500/30" />
+            <span className="text-sm font-black uppercase tracking-[0.2em] text-cyan-400">WRYCLIP WRITER PORTFOLIO</span>
+          </div>
+          <a href="/" className="px-4 py-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-bold text-cyan-400 hover:bg-cyan-500/20 transition">
+            BACK TO FEED
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Sidebar Profile Card */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            <div className="w-full rounded-3xl bg-white/[0.02] border border-[rgba(0,240,255,0.3)] shadow-[0_8px_32px_rgba(0,240,255,0.05)] backdrop-blur-xl p-6 flex flex-col gap-6 relative overflow-hidden text-center">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
               
-              {/* Verified Badge */}
-              {isWriterPro && (
-                <span
-                  title="Verified Writer Pro"
-                  className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500 text-black text-[10px] font-bold shadow-[0_0_10px_rgba(6,182,212,0.6)]"
-                >
-                  ✓
+              <div className="shrink-0 relative">
+                <div className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)] mx-auto relative">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.full_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const fallbackDiv = document.getElementById("writer-avatar-fallback");
+                        if (fallbackDiv) fallbackDiv.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    id="writer-avatar-fallback"
+                    className="w-full h-full bg-gradient-to-br from-cyan-900 to-indigo-950 flex items-center justify-center font-bold text-3xl tracking-wide text-cyan-300"
+                    style={{ display: profile.avatar_url ? "none" : "flex" }}
+                  >
+                    {getInitials(profile.full_name)}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center justify-center gap-1.5">
+                  {profile.full_name}
+                  {isWriterPro && (
+                    <span
+                      title="Verified Writer Pro"
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-cyan-500 text-black text-[9px] font-bold shadow-[0_0_10px_rgba(6,182,212,0.6)]"
+                    >
+                      ✓
+                    </span>
+                  )}
+                </h1>
+                <p className="text-xs font-semibold font-mono text-cyan-400/90 mt-1">@{profile.username}</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 justify-center items-center">
+                <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-[10px] font-bold text-cyan-300">
+                  {profile.role || "Screenwriter"}
                 </span>
+                {isWriterPro ? (
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-[9px] font-bold text-cyan-300 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                    Writer Pro
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-medium text-gray-400">
+                    Standard
+                  </span>
+                )}
+                <button
+                  onClick={handlePrint}
+                  className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-bold flex items-center gap-1 transition print:hidden cursor-pointer"
+                >
+                  📥 Save PDF
+                </button>
+              </div>
+
+              <p className="text-xs text-gray-300 leading-relaxed italic">
+                {profile.bio || "Crafting cinematic journeys and original storytelling. Read my screenplays below."}
+              </p>
+
+              {profile.tags && profile.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {profile.tags.map((tag, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.07] text-[9px] uppercase font-bold text-gray-300 tracking-wider">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
               )}
-            </h1>
-            
-            <span className={`text-sm font-semibold font-mono ${darkMode ? "text-cyan-400/90" : "text-cyan-600"} align-middle`}>
-              @{profile.username}
-            </span>
-          </div>
 
-          <div className="flex flex-wrap gap-2 mb-4 justify-center md:justify-start items-center">
-            <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/25 text-xs font-bold text-purple-300">
-              {profile.role || "Screenwriter"}
-            </span>
+              <div className="border-t border-white/5 my-2" />
 
-            {isWriterPro ? (
-              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-xs font-bold text-cyan-300 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.15)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-                Writer Pro member
-              </span>
-            ) : (
-              <span className={`px-2.5 py-0.5 rounded-full ${
-                darkMode ? "bg-white/5 border-white/10 text-gray-400" : "bg-black/5 border-black/10 text-gray-600"
-              } text-xs font-medium`}>
-                Standard tier
-              </span>
-            )}
+              {/* Stats Block */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">🎬</span>
+                  <span className="text-sm font-extrabold text-white">{writerPosts.length}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Scripts</span>
+                </div>
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">❤️</span>
+                  <span className="text-sm font-extrabold text-white">{writerLikes}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Likes</span>
+                </div>
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">💾</span>
+                  <span className="text-sm font-extrabold text-white">{stats.totalSaves}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Saves</span>
+                </div>
+              </div>
 
-            {/* Download Portfolio Button */}
-            <button
-              onClick={handlePrint}
-              className={`px-2.5 py-0.5 rounded-full ${
-                darkMode 
-                  ? "bg-white/5 hover:bg-white/10 border-white/10 text-gray-300 hover:text-white" 
-                  : "bg-black/5 hover:bg-black/10 border-black/10 text-gray-700 hover:text-black"
-              } text-xs font-bold flex items-center gap-1.5 transition print:hidden cursor-pointer`}
-              title="Download Portfolio as PDF"
-            >
-              📥 Save PDF
-            </button>
-          </div>
+              <div className="border-t border-white/5 my-2" />
 
-          <p className={`text-sm ${darkMode ? "text-gray-300" : "text-gray-600"} max-w-xl leading-relaxed italic`}>
-            {profile.bio || "Crafting cinematic journeys and original storytelling. Read my screenplays below."}
-          </p>
+              <a
+                href={mailtoUrl}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black text-xs font-black uppercase tracking-wider text-center transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_16px_rgba(6,182,212,0.3)]"
+              >
+                EMAIL SCRIPT INQUIRY ✉️
+              </a>
 
-          {/* Creative Tags */}
-          {profile.tags && profile.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-4 justify-center md:justify-start">
-              {profile.tags.map((tag, idx) => (
-                <span
-                  key={idx}
-                  className={`px-2.5 py-0.5 rounded-md ${
-                    darkMode ? "bg-white/[0.03] border-white/[0.07] text-gray-300" : "bg-black/[0.03] border-black/[0.07] text-gray-600"
-                  } text-[10px] uppercase font-bold tracking-wider`}
-                >
-                  #{tag}
-                </span>
-              ))}
+              <button
+                onClick={handleDownloadApp}
+                className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-wider transition hover:bg-white/10"
+              >
+                CHAT IN APP 💬
+              </button>
             </div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* 2. Analytics Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1 }}
-        className="grid grid-cols-3 gap-4 md:gap-6 portfolio-stats-row"
-      >
-        {[
-          { label: "Total Creations", value: stats.scriptsCount, icon: "🎨", glow: "rgba(168,85,247,0.2)" },
-          { label: "Total Likes", value: stats.totalLikes, icon: "❤️", glow: "rgba(236,72,153,0.2)" },
-          { label: "Total Saves", value: stats.totalSaves, icon: "💾", glow: "rgba(6,182,212,0.2)" },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className={`rounded-2xl ${
-              darkMode ? "bg-white/[0.02] border-white/[0.06]" : "bg-black/[0.02] border-black/[0.06] hover:border-black/10"
-            } backdrop-blur-md p-4 flex flex-col justify-center items-center text-center shadow-lg relative overflow-hidden group hover:border-white/10 transition-all duration-300 portfolio-stat-card`}
-            style={{ boxShadow: `inset 0 0 12px ${stat.glow}` }}
-          >
-            <span className="text-lg md:text-xl mb-1 group-hover:scale-110 transition duration-300">{stat.icon}</span>
-            <span className={`text-2xl md:text-3xl font-extrabold bg-gradient-to-r ${
-              darkMode ? "from-white to-gray-300" : "from-gray-955 to-gray-700"
-            } bg-clip-text text-transparent tracking-tight`}>
-              {stat.value}
-            </span>
-            <span className={`text-[10px] uppercase font-bold tracking-widest ${darkMode ? "text-gray-400" : "text-gray-600"} mt-1`}>
-              {stat.label}
-            </span>
           </div>
-        ))}
-      </motion.div>
 
-      {/* 3. Creations Showcase */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.2 }}
-        className="flex flex-col gap-6"
-      >
-        <div className={`flex items-center justify-between border-b ${darkMode ? "border-white/10" : "border-black/10"} pb-4`}>
-          <h2 className={`text-xl font-bold tracking-tight bg-gradient-to-r ${
-            darkMode ? "from-purple-300 to-cyan-300" : "from-purple-600 to-cyan-600"
-          } bg-clip-text text-transparent`}>
-            Creations Showcase
-          </h2>
-          <span className={`text-xs ${
-            darkMode ? "bg-white/5 border-white/10 text-gray-400" : "bg-black/5 border-black/10 text-gray-600"
-          } px-3 py-1 rounded-full font-semibold`}>
-            {posts.length} {posts.length === 1 ? "Creation" : "Creations"} Published
-          </span>
-        </div>
+          {/* Screenplay Showcase List */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-lg font-bold tracking-tight text-cyan-400">
+                SCREENPLAY SHOWCASE
+              </h2>
+              <span className="text-xs bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full font-semibold">
+                {writerPosts.length} Screenplays Published
+              </span>
+            </div>
 
-        {posts.length === 0 ? (
-          <div className={`rounded-3xl border ${
-            darkMode ? "border-white/[0.06] bg-white/[0.01] text-gray-400" : "border-black/[0.06] bg-black/[0.01] text-gray-600"
-          } p-12 text-center relative overflow-hidden backdrop-blur-md`}>
-            <span className="text-4xl block mb-3">✨</span>
-            <p className={`text-base font-bold ${darkMode ? "text-white" : "text-gray-900"} mb-1`}>No Public Creations Yet</p>
-            <p className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-500"} max-w-xs mx-auto leading-relaxed`}>
-              @{profile.username} has not published any public stories, scripts, or collaborations yet.
-            </p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6 portfolio-creations-grid">
-            {posts.map((post) => {
-              const metaChipClass = `px-2 py-0.5 rounded ${
-                darkMode ? "bg-white/5 border-white/5 text-gray-300" : "bg-black/5 border-black/5 text-gray-600"
-              } text-[9px] font-bold flex items-center gap-1`;
-              
-              return (
-                <motion.div
-                  key={post.id}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  className={`rounded-2xl ${
-                    darkMode ? "bg-white/[0.03] border-white/[0.08]" : "bg-black/[0.02] border-black/[0.08]"
-                  } backdrop-blur-lg p-5 flex flex-col justify-between hover:border-purple-500/40 hover:shadow-[0_0_25px_rgba(168,85,247,0.12)] transition-all duration-300 relative overflow-hidden group portfolio-creation-card`}
-                >
-                  {/* Micro background gradient */}
-                  <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-500/5 rounded-full blur-2xl group-hover:bg-purple-500/10 transition-colors duration-500"></div>
-
-                  <div>
-                    {/* Cover Image if present */}
+            {writerPosts.length === 0 ? (
+              <div className="rounded-3xl border border-white/[0.06] bg-white/[0.01] text-gray-400 p-12 text-center relative overflow-hidden backdrop-blur-md">
+                <span className="text-4xl block mb-3">✨</span>
+                <p className="text-base font-bold text-white mb-1">No Screenplays Published</p>
+                <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">
+                  @{profile.username} has not published any screenplays yet.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-6">
+                {writerPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="rounded-r-2xl border-l-4 border-l-[#00F0FF] border-y border-r border-white/10 bg-white/[0.01] hover:border-cyan-500/30 hover:bg-white/[0.02] transition-all duration-300 p-6 flex flex-col justify-between relative overflow-hidden group"
+                  >
                     {post.cover_url && (
-                      <div className={`w-full h-40 rounded-xl overflow-hidden mb-4 border ${darkMode ? "border-white/10" : "border-black/10"} relative`}>
-                        <img
-                          src={post.cover_url}
-                          alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
+                      <div className="w-full h-48 rounded-xl overflow-hidden mb-4 border border-white/10 relative">
+                        <img src={post.cover_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-[1.02] transition duration-500" />
                       </div>
                     )}
 
-                    {/* ID & Stamp */}
-                    <div className={`flex justify-between items-center text-[10px] ${darkMode ? "text-gray-400" : "text-gray-600"} font-semibold mb-3 border-b ${darkMode ? "border-white/5" : "border-black/5"} pb-2`}>
-                      <span className={`px-2 py-0.5 rounded border font-mono tracking-wider ${getPostTypeColor(post)}`}>
-                        {getScriptId(post)}
+                    <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold mb-3 border-b border-white/5 pb-2">
+                      <span className="px-2 py-0.5 rounded border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 font-mono tracking-wider">
+                        WR-{post.id.slice(0, 8).toUpperCase()}
                       </span>
                       <span>{formatDate(post.created_at)}</span>
                     </div>
 
-                    {/* Title & Logline */}
-                    <h3 className={`text-lg font-bold ${darkMode ? "text-white group-hover:text-purple-300" : "text-gray-900 group-hover:text-purple-600"} mb-2 leading-tight transition duration-300 flex items-center gap-2`}>
-                      <span className="text-base">{getPostTypeIcon(post)}</span>
-                      {post.title}
+                    <h3 className="text-lg font-bold text-cyan-400 mb-2 leading-tight transition duration-300" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
+                      🎬 {post.title}
                     </h3>
 
-                    {/* Content / Paywall Lock */}
                     {post.is_premium ? (
-                      <div className={`flex items-center gap-2.5 rounded-xl bg-amber-500/5 border ${darkMode ? "border-amber-500/20" : "border-amber-500/30"} px-3 py-2.5 mb-4`}>
+                      <div className="flex items-center gap-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20 px-3 py-2.5 mb-4">
                         <span className="text-lg shrink-0">🔒</span>
                         <div>
-                          <p className={`text-[10px] font-bold ${darkMode ? "text-amber-300" : "text-amber-800"} uppercase tracking-wider mb-0.5`}>Premium Content Locked</p>
-                          <p className={`text-[9px] ${darkMode ? "text-gray-400" : "text-gray-600"} leading-relaxed`}>Download the WryClip app to unlock this creation.</p>
+                          <p className="text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-0.5">Premium Content Locked</p>
+                          <p className="text-[9px] text-gray-400 leading-relaxed">Download the WryClip app to unlock this script.</p>
                         </div>
                       </div>
                     ) : (
-                      <p className={`text-xs ${darkMode ? "text-gray-300" : "text-gray-600"} leading-relaxed line-clamp-4 mb-4 pr-1`}>
+                      <p className="text-xs text-gray-300 leading-relaxed line-clamp-4 mb-4 pr-1" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
                         {post.content || "No synopsis or detail content provided."}
                       </p>
                     )}
-                  </div>
 
-                  {/* Metadata Badges */}
-                  <div className="flex flex-col gap-3 mt-auto">
-                    {/* Script Metadata (Only render if it is a script and has metadata) */}
-                    {(post.script_budget || post.script_episodes || post.script_language || post.script_status) && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {post.script_budget && (
-                          <span className={metaChipClass}>
-                            💰 Budget: {post.script_budget}
-                          </span>
-                        )}
-                        {post.script_episodes && (
-                          <span className={metaChipClass}>
-                            🎬 {post.script_episodes}
-                          </span>
-                        )}
-                        {post.script_language && (
-                          <span className={metaChipClass}>
-                            🗣️ {post.script_language}
-                          </span>
-                        )}
-                        {post.script_status && (
-                          <span className={metaChipClass}>
-                            ⚡ {post.script_status}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Monetized Badge (is_premium post) */}
-                    {post.is_premium && (
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className={`px-2.5 py-0.5 rounded-full border text-[9px] font-bold flex items-center gap-1 ${
-                          darkMode ? "bg-amber-500/10 border-amber-500/30 text-amber-300" : "bg-amber-500/10 border-amber-500/30 text-amber-800"
-                        } shadow-[0_0_8px_rgba(251,191,36,0.15)]`}>
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                          💎 Monetized
-                          {post.price && post.price > 0 && (
-                            <span className={`ml-1 ${darkMode ? "text-amber-200" : "text-amber-700"} font-extrabold`}>· ₹{post.price}</span>
-                          )}
+                    {/* Metadata badges row */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {post.genre && (
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-gray-300">
+                          🎭 {post.genre}
                         </span>
-                      </div>
-                    )}
-
-                    {/* Category Badge (For stories/collabs/vlogs) */}
-                    {post.post_type !== "script" && post.category && (
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className={`px-2 py-0.5 rounded ${
-                          darkMode ? "bg-white/5 border-white/5 text-purple-300" : "bg-black/5 border-black/5 text-purple-700"
-                        } text-[9px] font-bold flex items-center gap-1`}>
-                          📁 Category: {post.category}
+                      )}
+                      {post.script_budget && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-[10px] text-emerald-400">
+                          💰 {post.script_budget}
                         </span>
-                      </div>
-                    )}
+                      )}
+                      {post.script_episodes && (
+                        <span className="px-2 py-0.5 rounded bg-pink-500/10 border border-pink-500/25 text-[10px] text-pink-400">
+                          🎞️ {post.script_episodes}
+                        </span>
+                      )}
+                      {post.script_language && (
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[10px] text-gray-300">
+                          🗣️ {post.script_language}
+                        </span>
+                      )}
+                      {post.script_status && (
+                        <span className="px-2 py-0.5 rounded bg-violet-500/10 border border-violet-500/25 text-[10px] text-violet-400">
+                          📝 {post.script_status}
+                        </span>
+                      )}
+                      {post.is_premium && post.price && (
+                        <span className="px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-[10px] text-amber-300">
+                          💎 ₹{post.price}
+                        </span>
+                      )}
+                    </div>
 
-                    {/* Verified Original Work Stamp & Read Screenplay Button */}
-                    <div className={`flex justify-between items-center pt-2.5 border-t ${darkMode ? "border-white/5" : "border-black/5"} mt-1`}>
-                      <span className="text-[8px] tracking-wider text-cyan-400 font-bold uppercase flex items-center gap-1">
+                    <div className="flex justify-between items-center pt-3 border-t border-white/5">
+                      <span className="text-[9px] tracking-wider text-cyan-400 font-bold uppercase flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                         Verified Original Work
                       </span>
 
                       <button
                         onClick={() => setActiveScript(post)}
-                        className="py-1.5 px-3.5 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[10px] font-bold shadow-md hover:scale-105 active:scale-95 transition cursor-pointer"
+                        className="py-1.5 px-3.5 rounded-lg bg-gradient-to-r from-cyan-400 to-blue-500 text-black text-xs font-bold hover:opacity-90 transition duration-300"
                       >
-                        Read {getPostTypeLabel(post)}
+                        Read Script Details
                       </button>
                     </div>
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
+                ))}
+              </div>
+            )}
 
-      {/* 4. Call to Action Banner (Glassmorphic) */}
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className={`w-full rounded-3xl ${
-          darkMode 
-            ? "bg-gradient-to-br from-white/[0.04] to-transparent border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.6)]" 
-            : "bg-gradient-to-br from-black/[0.03] to-transparent border-black/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.05)]"
-        } backdrop-blur-xl border p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 mt-6 relative overflow-hidden print-hidden portfolio-cta-banner`}
-      >
-        {/* Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="text-center md:text-left flex-1">
-          <span className="text-[9px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 px-2 py-1 rounded-md border border-purple-500/20 shadow-sm">
-            WryClip Ecosystem
-          </span>
-          <h3 className="text-lg md:text-xl font-bold mt-3 mb-2">
-            Follow {profile.full_name} on the WryClip Mobile App
-          </h3>
-          <p className={`text-xs ${darkMode ? "text-gray-300" : "text-gray-600"} max-w-xl leading-relaxed`}>
-            Read complete drafts, unlock premium screenplays, request collaborations, or follow the writer for real-time updates. Scan or download the app today!
-          </p>
-        </div>
-
-        {/* Download Badges (Beautiful Styled SVGs) */}
-        <div className="flex gap-3 shrink-0 flex-wrap justify-center">
-          {/* iOS App Store Button */}
-          <a
-            href="#download"
-            onClick={(e) => {
-              e.preventDefault();
-              alert("Coming soon! iOS build is currently under App Store review.");
-            }}
-            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-black hover:bg-black/80 border border-white/10 hover:border-purple-500/30 transition shadow-lg cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.56 2.95-1.39z" />
-            </svg>
-            <div className="text-left">
-              <span className="block text-[8px] uppercase tracking-wide text-gray-400">Download on the</span>
-              <span className="block text-[11px] font-bold text-white leading-tight">App Store</span>
-            </div>
-          </a>
-
-          {/* Google Play Store Button */}
-          <a
-            href="#download"
-            onClick={(e) => {
-              e.preventDefault();
-              alert("Coming soon! Android build is currently under Play Store review.");
-            }}
-            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-black hover:bg-black/80 border border-white/10 hover:border-cyan-500/30 transition shadow-lg cursor-pointer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M5 3.25c-.02.04-.05.08-.05.13v17.24c0 .05.03.09.05.13L14.81 12 5 3.25zM15.75 11.2l-2.47-2.22L5.8 4.05c-.32-.23-.62-.25-.86-.06l10.81 9.61v-2.4zM5.8 19.95l7.48-4.93 2.47-2.22v-2.4L5 20.01c.24.19.54.17.8-.06zM16.56 12.87l3.8-2.19c.73-.42.73-1.09 0-1.51l-3.8-2.19L14.28 12l2.28.87z" />
-            </svg>
-            <div className="text-left">
-              <span className="block text-[8px] uppercase tracking-wide text-gray-400">Get it on</span>
-              <span className="block text-[11px] font-bold text-white leading-tight">Google Play</span>
-            </div>
-          </a>
-        </div>
-      </motion.div>
-
-      {/* 5. Read Screenplay Modal (AnimatePresence Glass Card) */}
-      <AnimatePresence>
-        {activeScript && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 flex items-start justify-center p-4 pt-24 md:pt-28 bg-black/85 backdrop-blur-md print-hidden overflow-y-auto"
-            onClick={() => setActiveScript(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 10 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className={`w-full max-w-2xl rounded-3xl ${
-                darkMode ? "bg-white/[0.04] border-white/[0.1]" : "bg-white border-black/[0.1]"
-              } border shadow-2xl p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden text-left`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Decorative backgrounds */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-              {/* Modal Header */}
-              <div className={`flex justify-between items-start border-b ${darkMode ? "border-white/10" : "border-black/10"} pb-4 relative z-10`}>
-                <div>
-                  <div className="flex gap-2 items-center text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-1">
-                    <span>{getScriptId(activeScript)}</span>
-                    <span className="w-1 h-1 rounded-full bg-white/30"></span>
-                    <span>{formatDate(activeScript.created_at)}</span>
-                  </div>
-                  <h2 className={`text-xl md:text-2xl font-extrabold ${darkMode ? "text-white" : "text-gray-900"} leading-snug flex items-center gap-2`}>
-                    <span className="text-lg">{getPostTypeIcon(activeScript)}</span>
-                    {activeScript.title}
-                  </h2>
+            {/* Secondary Creations (Videos for Writers) */}
+            {creatorPosts.length > 0 && (
+              <div className="mt-12 flex flex-col gap-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <h3 className="text-base font-bold tracking-tight text-cyan-400/80 uppercase">
+                    🎥 Additional Video Creations & Reels
+                  </h3>
+                  <span className="text-xs bg-white/5 border border-white/10 text-gray-400 px-3 py-1 rounded-full font-semibold">
+                    {creatorPosts.length} Videos
+                  </span>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {creatorPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="rounded-2xl border border-white/10 bg-white/[0.02] hover:border-cyan-500/30 hover:bg-white/[0.03] transition-all duration-300 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer"
+                      onClick={() => setActiveScript(post)}
+                    >
+                      <div>
+                        {/* Project Thumbnail Card */}
+                        <div className="relative w-full h-36 rounded-xl overflow-hidden mb-3 border border-white/5 bg-black">
+                          {post.cover_url ? (
+                            <img src={post.cover_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-cyan-500/20 to-purple-950/40 flex items-center justify-center text-3xl">🎬</div>
+                          )}
+                          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/60 text-[8px] font-bold text-white">
+                            👁️ {(post.likes_count || 0) * 4 + 12} Views
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-[9px] text-gray-400 font-semibold mb-2">
+                          <span className="px-1.5 py-0.5 rounded border border-cyan-500/20 text-cyan-400 bg-cyan-500/5 font-mono tracking-wider">
+                            CR-{post.id.slice(0, 8).toUpperCase()}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-bold text-white group-hover:text-cyan-400 leading-snug mb-1 transition duration-300">
+                          {post.title}
+                        </h4>
+
+                        <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2 mb-3">
+                          {post.content || "No creation details shared."}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {post.category && (
+                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-bold text-cyan-400">
+                            {post.category}
+                          </span>
+                        )}
+                        {post.genre && (
+                          <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] font-bold text-gray-300">
+                            🎭 {post.genre}
+                          </span>
+                        )}
+                        <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-[8px] font-bold text-purple-400">
+                          ❤️ {post.likes_count || 0} Likes
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 2. CREATOR PRO LAYOUT
+  const renderCreatorProLayout = () => {
+    const creatorLikes = creatorPosts.reduce((sum, p) => sum + (p.likes_count || 0), 0);
+    const emailAddress = profile.email || "mayank0522.s@gmail.com";
+    const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent("WryClip Brand Collaboration Proposal")}&body=${encodeURIComponent(`Hi @${profile.username}, we found your Creator Pro video portfolio on WryClip and would like to discuss a project...`)}`;
+
+    return (
+      <div className={`min-h-screen pt-28 pb-20 px-4 md:px-8 max-w-5xl mx-auto flex flex-col gap-8 relative z-10 portfolio-print-wrapper`}>
+        {/* Background Atmosphere */}
+        <div className="fixed inset-0 -z-10 bg-gradient-to-b from-[#050208] via-[#120c1a] to-[#000000] pointer-events-none" />
+        <div className="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-pink-500/10 blur-[120px] pointer-events-none" />
+        <div className="fixed bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-purple-500/10 blur-[150px] pointer-events-none" />
+
+        {/* Back to Homepage Button */}
+        <div className="print-hidden -mb-4">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-pink-500 hover:text-pink-400 font-bold transition cursor-pointer"
+          >
+            ← Back to Homepage
+          </a>
+        </div>
+
+        {/* Branding Header */}
+        <div className="flex justify-between items-center border-b border-white/10 pb-6 mb-2 print-hidden">
+          <div className="flex items-center gap-3">
+            <img src="/bg-logo.jpeg" alt="WryClip Logo" className="w-10 h-10 rounded-xl object-cover border border-pink-500/30" />
+            <span className="text-sm font-black uppercase tracking-[0.2em] text-pink-500">WRYCLIP CREATOR PORTFOLIO</span>
+          </div>
+          <a href="/" className="px-4 py-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-xs font-bold text-pink-400 hover:bg-pink-500/20 transition">
+            BACK TO FEED
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Sidebar Profile Card */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            <div className="w-full rounded-3xl bg-white/[0.02] border border-[rgba(255,0,127,0.35)] shadow-[0_8px_32px_rgba(255,0,127,0.05)] backdrop-blur-xl p-6 flex flex-col gap-6 relative overflow-hidden text-center">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+              <div className="shrink-0 relative">
+                <div className="w-28 h-28 rounded-full overflow-hidden flex items-center justify-center border-2 border-pink-500 shadow-[0_0_15px_rgba(255,0,127,0.5)] mx-auto relative">
+                  {profile.avatar_url ? (
+                    <img
+                      src={profile.avatar_url}
+                      alt={profile.full_name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                        const fallbackDiv = document.getElementById("creator-avatar-fallback");
+                        if (fallbackDiv) fallbackDiv.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    id="creator-avatar-fallback"
+                    className="w-full h-full bg-gradient-to-br from-purple-900 to-indigo-950 flex items-center justify-center font-bold text-3xl tracking-wide text-pink-300"
+                    style={{ display: profile.avatar_url ? "none" : "flex" }}
+                  >
+                    {getInitials(profile.full_name)}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center justify-center gap-1.5">
+                  {profile.full_name}
+                  {isWriterPro && (
+                    <span
+                      title="Verified Creator Pro"
+                      className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-pink-500 text-black text-[9px] font-bold shadow-[0_0_10px_rgba(255,0,127,0.6)]"
+                    >
+                      ✓
+                    </span>
+                  )}
+                </h1>
+                <p className="text-xs font-semibold font-mono text-pink-400 mt-1">@{profile.username}</p>
+              </div>
+
+              <div className="flex flex-wrap gap-2 justify-center items-center">
+                <span className="px-2.5 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/25 text-[10px] font-bold text-pink-400">
+                  {profile.role || "Creator"}
+                </span>
+                {isWriterPro ? (
+                  <span className="px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/25 text-[9px] font-bold text-pink-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"></span>
+                    Creator Pro
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-medium text-gray-400">
+                    Standard
+                  </span>
+                )}
                 <button
-                  onClick={() => setActiveScript(null)}
-                  className={`w-8 h-8 rounded-full ${
-                    darkMode 
-                      ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" 
-                      : "bg-black/5 border-black/10 hover:bg-black/10 text-gray-800"
-                  } flex items-center justify-center transition text-sm cursor-pointer`}
+                  onClick={handlePrint}
+                  className="px-2 py-0.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[9px] font-bold flex items-center gap-1 transition print:hidden cursor-pointer"
                 >
-                  ✕
+                  📥 Save PDF
                 </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="relative z-10">
-                <div className={`${darkMode ? "bg-black/35 border-white/5" : "bg-slate-50 border-black/5"} rounded-2xl border p-5`}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-cyan-400">
-                      {getPostTypeLabel(activeScript)} Content
-                    </span>
-                    {!activeScript.is_premium && (
-                      <button
-                        onClick={() => handleCopyText(activeScript.content || "", activeScript.id)}
-                        className={`px-2.5 py-1 rounded ${
-                          darkMode 
-                            ? "bg-white/5 border-white/5 text-gray-400 hover:text-white" 
-                            : "bg-black/5 border-black/5 text-gray-600 hover:text-black"
-                        } text-[9px] font-bold transition flex items-center gap-1 cursor-pointer`}
-                      >
-                        {copiedScriptId === activeScript.id ? "✓ Copied!" : "📋 Copy"}
-                      </button>
-                    )}
-                  </div>
+              <p className="text-xs text-gray-300 leading-relaxed italic">
+                {profile.bio || "Crafting visual stories and cinematic creations. View my projects below."}
+              </p>
 
-                  {activeScript.is_premium ? (
-                    <div className="flex flex-col items-center justify-center py-10 gap-4 text-center">
-                      <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl shadow-[0_0_24px_rgba(251,191,36,0.15)]">
-                        🔒
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-amber-300 mb-1">Premium Content</p>
-                        <p className="text-xs text-gray-400 max-w-xs leading-relaxed">
-                          This is a monetized creation. Download the WryClip app to unlock and read the full content.
-                        </p>
-                        {activeScript.price && activeScript.price > 0 && (
-                          <p className="mt-2 text-xs font-extrabold text-amber-200">Unlock for ₹{activeScript.price}</p>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`whitespace-pre-wrap font-sans text-sm ${darkMode ? "text-gray-300" : "text-gray-700"} leading-relaxed max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar`}>
-                      {activeScript.content || "No script detail content is provided."}
-                    </div>
-                  )}
+              {profile.tags && profile.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {profile.tags.map((tag, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.07] text-[9px] uppercase font-bold text-gray-300 tracking-wider">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="border-t border-white/5 my-2" />
+
+              {/* Stats Block */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">🎥</span>
+                  <span className="text-sm font-extrabold text-white">{creatorPosts.length}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Videos</span>
+                </div>
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">❤️</span>
+                  <span className="text-sm font-extrabold text-white">{creatorLikes}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Likes</span>
+                </div>
+                <div className="bg-white/[0.01] border border-white/5 p-2 rounded-xl flex flex-col items-center">
+                  <span className="text-base">💾</span>
+                  <span className="text-sm font-extrabold text-white">{stats.totalSaves}</span>
+                  <span className="text-[8px] text-gray-500 uppercase font-black">Saves</span>
                 </div>
               </div>
 
-              {/* Modal Footer / Download Info */}
-              <div className={`flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t ${
-                darkMode ? "border-white/5 text-gray-400" : "border-black/5 text-gray-600"
-              } text-[10px] relative z-10`}>
-                <span className="flex items-center gap-1 text-cyan-400 font-bold uppercase tracking-wider">
-                  🛡️ WryClip Original IP
-                </span>
-                <span className="text-center sm:text-right">
-                  Upgrade to Writer Pro on the mobile app to read full drafts and dialogues
-                </span>
+              <div className="border-t border-white/5 my-2" />
+
+              <a
+                href={mailtoUrl}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-black uppercase tracking-wider text-center transition-all duration-300 hover:scale-[1.02] active:scale-95 shadow-[0_4px_16px_rgba(255,0,127,0.3)]"
+              >
+                BRAND COLLAB INQUIRY ✉️
+              </a>
+
+              <button
+                onClick={handleDownloadApp}
+                className="w-full py-3 rounded-2xl bg-white/5 border border-white/10 text-white text-xs font-black uppercase tracking-wider transition hover:bg-white/10"
+              >
+                CHAT IN WRYCLIP 💬
+              </button>
+            </div>
+          </div>
+
+          {/* Cinematic Showcase Grid */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-lg font-bold tracking-tight text-pink-500">
+                CINEMATIC SERIES & PROJECTS
+              </h2>
+              <span className="text-xs bg-pink-500/10 border border-pink-500/20 text-pink-400 px-3 py-1 rounded-full font-semibold">
+                {creatorPosts.length} Projects Published
+              </span>
+            </div>
+
+            {creatorPosts.length === 0 ? (
+              <div className="rounded-3xl border border-white/[0.06] bg-white/[0.01] text-gray-400 p-12 text-center relative overflow-hidden backdrop-blur-md">
+                <span className="text-4xl block mb-3">✨</span>
+                <p className="text-base font-bold text-white mb-1">No Video Projects Published</p>
+                <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">
+                  @{profile.username} has not published any video projects yet.
+                </p>
               </div>
-            </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {creatorPosts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="rounded-2xl border border-white/10 bg-white/[0.02] hover:border-pink-500/30 hover:bg-white/[0.03] transition-all duration-300 p-4 flex flex-col justify-between relative overflow-hidden group cursor-pointer"
+                    onClick={() => setActiveScript(post)}
+                  >
+                    <div>
+                      {/* Project Thumbnail Card */}
+                      <div className="relative w-full h-40 rounded-xl overflow-hidden mb-4 border border-white/5 bg-black">
+                        {post.cover_url ? (
+                          <img src={post.cover_url} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-pink-500/20 to-purple-950/40 flex items-center justify-center text-4xl">🎬</div>
+                        )}
+                        <div className="absolute bottom-2.5 left-2.5 px-2 py-0.5 rounded bg-black/60 text-[9px] font-bold text-white">
+                          👁️ {(post.likes_count || 0) * 4 + 12} Views
+                        </div>
+                      </div>
+
+                      {/* Header Row */}
+                      <div className="flex justify-between items-center text-[10px] text-gray-400 font-semibold mb-2.5">
+                        <span className="px-2 py-0.5 rounded border border-pink-500/20 text-pink-400 bg-pink-500/5 font-mono tracking-wider">
+                          CR-{post.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span>{formatDate(post.created_at)}</span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-white group-hover:text-pink-400 leading-snug mb-2 transition duration-300">
+                        {post.title}
+                      </h3>
+
+                      <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 mb-4">
+                        {post.content || "No creation details shared."}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {post.category && (
+                        <span className="px-2 py-0.5 rounded bg-pink-500/10 border border-pink-500/20 text-[9px] font-bold text-pink-400">
+                          {post.category}
+                        </span>
+                      )}
+                      {post.genre && (
+                        <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-bold text-gray-300">
+                          🎭 {post.genre}
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-[9px] font-bold text-purple-400">
+                        ❤️ {post.likes_count || 0} Likes
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-3 border-t border-white/5 mt-1">
+                      <span className="text-[8px] tracking-wider text-pink-400 font-bold uppercase flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                        Verified Original Creator
+                      </span>
+
+                      <span className="text-[10px] text-pink-400 font-bold hover:underline">
+                        View Project →
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Secondary Creations (Written works for Creators) */}
+            {writerPosts.length > 0 && (
+              <div className="mt-12 flex flex-col gap-6">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <h3 className="text-base font-bold tracking-tight text-pink-500/80 uppercase">
+                    ✍️ Additional Written Works & Scripts
+                  </h3>
+                  <span className="text-xs bg-white/5 border border-white/10 text-gray-400 px-3 py-1 rounded-full font-semibold">
+                    {writerPosts.length} Written Works
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  {writerPosts.map((post) => (
+                    <div
+                      key={post.id}
+                      className="rounded-r-2xl border-l-4 border-l-[#FF007F] border-y border-r border-white/10 bg-white/[0.01] hover:border-pink-500/30 hover:bg-white/[0.02] transition-all duration-300 p-5 flex flex-col justify-between relative overflow-hidden group cursor-pointer"
+                      onClick={() => setActiveScript(post)}
+                    >
+                      <div>
+                        <div className="flex justify-between items-center text-[9px] text-gray-400 font-semibold mb-2">
+                          <span className="px-1.5 py-0.5 rounded border border-pink-500/20 text-pink-400 bg-pink-500/5 font-mono tracking-wider">
+                            WR-{post.id.slice(0, 8).toUpperCase()}
+                          </span>
+                        </div>
+
+                        <h4 className="text-base font-bold text-pink-400 mb-2 leading-tight transition duration-300" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
+                          🎬 {post.title}
+                        </h4>
+
+                        <p className="text-xs text-gray-300 leading-relaxed line-clamp-3 mb-3 pr-1" style={{ fontFamily: 'Courier New, Courier, monospace' }}>
+                          {post.content || "No synopsis or detail content provided."}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {post.genre && (
+                          <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] text-gray-300">
+                            🎭 {post.genre}
+                          </span>
+                        )}
+                        {post.is_premium && post.price && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-[9px] text-amber-300">
+                            💎 ₹{post.price}
+                          </span>
+                        )}
+                        <span className="px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-[9px] font-bold text-purple-400">
+                          ❤️ {post.likes_count || 0} Likes
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 3. SHARED MODAL COMPONENT (Differentiated for screenplays and cinematic locked creations)
+  const renderSharedModal = () => {
+    if (!activeScript) return null;
+
+    const isCreatorPost = activeScript.post_type === 'video' || activeScript.category === 'Reels' || activeScript.category === 'Series';
+
+    return (
+      <AnimatePresence>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40 flex items-start justify-center p-4 pt-24 md:pt-28 bg-black/85 backdrop-blur-md print-hidden overflow-y-auto"
+          onClick={() => setActiveScript(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className={`w-full max-w-2xl rounded-3xl ${
+              darkMode ? "bg-white/[0.04] border-white/[0.1]" : "bg-white border-black/[0.1]"
+            } border shadow-2xl p-6 md:p-8 flex flex-col gap-5 relative overflow-hidden text-left`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Background Glows */}
+            {isCreatorPost ? (
+              <>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              </>
+            ) : (
+              <>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              </>
+            )}
+
+            {/* Modal Header */}
+            <div className={`flex justify-between items-start border-b ${darkMode ? "border-white/10" : "border-black/10"} pb-4 relative z-10`}>
+              <div>
+                <div className="flex gap-2 items-center text-[10px] font-mono text-purple-400 uppercase tracking-wider mb-1">
+                  <span>{isCreatorPost ? "CR" : "WR"}-{activeScript.id.slice(0, 8).toUpperCase()}</span>
+                  <span className="w-1 h-1 rounded-full bg-white/30"></span>
+                  <span>{formatDate(activeScript.created_at)}</span>
+                </div>
+                <h2 className={`text-xl md:text-2xl font-extrabold ${darkMode ? "text-white" : "text-gray-900"} leading-snug flex items-center gap-2`}>
+                  <span className="text-lg">{isCreatorPost ? "🎥" : "🎬"}</span>
+                  {activeScript.title}
+                </h2>
+              </div>
+              <button
+                onClick={() => setActiveScript(null)}
+                className={`w-8 h-8 rounded-full ${
+                  darkMode 
+                    ? "bg-white/5 border-white/10 hover:bg-white/10 text-white" 
+                    : "bg-black/5 border-black/10 hover:bg-black/10 text-gray-800"
+                } flex items-center justify-center transition text-sm cursor-pointer`}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="relative z-10 flex flex-col gap-4">
+              {isCreatorPost && activeScript.cover_url && (
+                <div className="w-full h-48 rounded-xl overflow-hidden border border-white/10 relative">
+                  <img src={activeScript.cover_url} alt={activeScript.title} className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className={`${darkMode ? "bg-black/35 border-white/5" : "bg-slate-50 border-black/5"} rounded-2xl border p-5`}>
+                <div className="flex justify-between items-center mb-3">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${isCreatorPost ? "text-pink-400" : "text-cyan-400"}`}>
+                    {isCreatorPost ? "Creator" : "Writer"} Project Parameters
+                  </span>
+                  {!activeScript.is_premium && (
+                    <button
+                      onClick={() => handleCopyText(activeScript.content || "", activeScript.id)}
+                      className={`px-2.5 py-1 rounded ${
+                        darkMode 
+                          ? "bg-white/5 border-white/5 text-gray-400 hover:text-white" 
+                          : "bg-black/5 border-black/5 text-gray-600 hover:text-black"
+                      } text-[9px] font-bold transition flex items-center gap-1 cursor-pointer`}
+                    >
+                      {copiedScriptId === activeScript.id ? "✓ Copied!" : "📋 Copy"}
+                    </button>
+                  )}
+                </div>
+
+                <div 
+                  className={`whitespace-pre-wrap font-sans text-sm ${darkMode ? "text-gray-300" : "text-gray-700"} leading-relaxed max-h-[30vh] overflow-y-auto pr-2 custom-scrollbar`}
+                  style={!isCreatorPost ? { fontFamily: 'Courier New, Courier, monospace' } : {}}
+                >
+                  {activeScript.content || "No synopsis or parameters provided."}
+                </div>
+              </div>
+
+              {/* Lock Card representation */}
+              {isCreatorPost ? (
+                <div className="relative rounded-2xl border border-pink-500/30 bg-pink-500/5 p-5 text-center overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-transparent pointer-events-none" />
+                  <span className="inline-block px-3 py-1 rounded-full bg-pink-500/20 border border-pink-500/30 text-[9px] font-bold text-pink-300 uppercase tracking-widest mb-3">CINEMATIC SERIES LOCK</span>
+                  <h4 className="text-sm font-extrabold text-white mb-2">CINEMATIC SERIES LOCK - Download WryClip to watch full series</h4>
+                  <p className="text-[11px] text-gray-400 leading-relaxed mb-4 max-w-md mx-auto">To protect the copyright and distribution agreements of our Creator Pro members, full video series and episodes can only be played inside the WryClip mobile application.</p>
+                  <button onClick={handleDownloadApp} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-pink-500/20 hover:scale-[1.02] active:scale-95 transition-all">DOWNLOAD WRYCLIP APK</button>
+                </div>
+              ) : (
+                <div className="relative rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-5 text-center overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent pointer-events-none" />
+                  <span className="inline-block px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-[9px] font-bold text-cyan-300 uppercase tracking-widest mb-3">SCREENPLAY PAGE LOCK</span>
+                  <h4 className="text-sm font-extrabold text-white mb-2">SCREENPLAY PAGE LOCK - Download WryClip to read full pages</h4>
+                  <p className="text-[11px] text-gray-400 leading-relaxed mb-4 max-w-md mx-auto">To protect the intellectual property and copyright of our Writer Pro members, complete screenplays and scripts can only be read within the WryClip mobile application.</p>
+                  <button onClick={handleDownloadApp} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 text-black text-xs font-black uppercase tracking-wider shadow-lg shadow-cyan-500/20 hover:scale-[1.02] active:scale-95 transition-all">DOWNLOAD WRYCLIP APK</button>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className={`flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t ${
+              darkMode ? "border-white/5 text-gray-400" : "border-black/5 text-gray-600"
+            } text-[10px] relative z-10`}>
+              <span className={`flex items-center gap-1 ${isCreatorPost ? "text-pink-400" : "text-cyan-400"} font-bold uppercase tracking-wider`}>
+                🛡️ WryClip Original IP
+              </span>
+              <span className="text-center sm:text-right">
+                Join WryClip to discuss optioning, distribution, and cast licensing.
+              </span>
+            </div>
           </motion.div>
-        )}
+        </motion.div>
       </AnimatePresence>
-    </div>
+    );
+  };
+
+  return (
+    <>
+      {isCreatorTemplate ? renderCreatorProLayout() : renderWriterProLayout()}
+      {renderSharedModal()}
+    </>
   );
 }
